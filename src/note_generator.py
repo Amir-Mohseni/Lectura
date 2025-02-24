@@ -1,53 +1,92 @@
 from typing import List, Dict
-import openai
+from openai import OpenAI
 from markdown import markdown
 import re
+import logging
+import os
+
+logger = logging.getLogger("lectura")
 
 class NoteGenerator:
-    def __init__(self, api_key: str, base_url: str = None, model: str = "gpt-4"):
-        """Initialize the note generator with API configuration.
+    def __init__(self, api_key=None, model=None, base_url=None):
+        # Use provided values or fall back to environment variables
+        self.api_key = api_key or os.getenv("API_KEY")
+        self.model = model or os.getenv("API_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        self.base_url = base_url or os.getenv("API_BASE_URL")
         
-        Args:
-            api_key (str): API key for the service
-            base_url (str, optional): Base URL for API endpoint. Defaults to OpenAI's.
-            model (str, optional): Model to use. Defaults to "gpt-4".
+        if not self.api_key:
+            logger.warning("No API key provided. API calls will fail.")
+        
+        # Configure OpenAI client
+        if self.base_url:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
+        else:
+            self.client = OpenAI(api_key=self.api_key)
+    
+    def generate_notes(self, transcript, slides):
+        """Generate structured notes from transcript and slides"""
+        logger.info(f"Generating notes using model: {self.model}")
+        
+        # Extract text from transcript
+        if isinstance(transcript, dict) and "text" in transcript:
+            transcript_text = transcript["text"]
+        else:
+            transcript_text = str(transcript)
+        
+        # Prepare slides content if available
+        slides_content = ""
+        if slides and len(slides) > 0:
+            slides_content = "Slide information:\n"
+            for slide in slides:
+                slide_num = slide.get("slide_number", "unknown")
+                content = slide.get("content", "")
+                slides_content += f"Slide {slide_num}: {content}\n\n"
+        
+        # Create prompt
+        prompt = f"""
+        You are an expert note-taker. Create comprehensive, well-structured notes from the following lecture transcript.
+        
+        {slides_content}
+        
+        Transcript:
+        {transcript_text}
+        
+        Please organize the notes with:
+        1. A clear title
+        2. Main topics with headings
+        3. Key points under each topic
+        4. Important definitions or concepts
+        5. A brief summary at the end
+        
+        Format the notes in Markdown.
         """
-        self.model = model
-        if base_url:
-            openai.api_base = base_url
-        openai.api_key = api_key
-        
-    def generate_notes(self, transcript: Dict, slides: List[Dict]) -> str:
-        """Generate structured notes from transcript and slides.
-        
-        Args:
-            transcript (Dict): Whisper transcription output
-            slides (List[Dict]): Extracted slide contents
-            
-        Returns:
-            str: Markdown formatted notes
-        """
-        # Combine slide content with transcript for context
-        combined_content = self._combine_content(transcript, slides)
-        
-        # Generate structured notes using the specified model
-        prompt = self._create_note_prompt(combined_content)
         
         try:
-            response = openai.ChatCompletion.create(
+            # Generate notes using the API
+            response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an expert note-taker. Create well-structured, clear, and concise notes from lecture content."},
+                    {"role": "system", "content": "You are an expert note-taking assistant."},
                     {"role": "user", "content": prompt}
-                ]
+                ],
+                temperature=0.3,
+                max_tokens=2000
             )
-            return response.choices[0].message.content
+            
+            # Extract and return the generated notes
+            notes = response.choices[0].message.content
+            return notes
             
         except Exception as e:
-            raise Exception(f"Note generation failed: {str(e)}")
+            logger.error(f"Error generating notes: {e}")
+            return f"Error generating notes: {str(e)}"
     
     def _combine_content(self, transcript: Dict, slides: List[Dict]) -> str:
         """Combine transcript and slide content with temporal alignment."""
+        logger.debug(f"Combining {len(transcript.get('segments', []))} transcript segments with {len(slides)} slides")
         combined = []
         current_slide_idx = 0
         
@@ -69,11 +108,13 @@ class NoteGenerator:
                     "text": segment["text"],
                     "slide_context": ""
                 })
-                
+        
+        logger.debug(f"Combined content has {len(combined)} segments")
         return combined
     
     def _create_note_prompt(self, combined_content: List[Dict]) -> str:
         """Create a prompt for note generation."""
+        logger.debug("Creating note generation prompt")
         prompt = "Please create well-structured notes from the following lecture content:\n\n"
         
         for item in combined_content:
@@ -88,4 +129,10 @@ class NoteGenerator:
         prompt += "3. Important definitions and examples\n"
         prompt += "4. Summary points at the end\n"
         
+        logger.debug(f"Prompt created with length: {len(prompt)} characters")
         return prompt 
+    
+if __name__ == "__main__":
+    note_generator = NoteGenerator()
+    notes = note_generator.generate_notes("Hello, world!", [])
+    print(notes)

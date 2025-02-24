@@ -1,54 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lecture Notes Generator</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <title>Lectura - Lecture Notes Generator</title>
+    <link rel="stylesheet" href="{{ static_url }}/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Lecture Notes Generator</h1>
-        
-        <div class="upload-form">
-            <form id="uploadForm">
-                <div class="form-group">
-                    <label for="audio">Lecture Audio File:</label>
-                    <input type="file" id="audio" name="audio" accept="audio/*" required>
+        <header>
+            <button type="button" class="icon-button" id="menuButton" aria-label="Menu">
+                <img src="{{ static_url }}/icons/menu.svg" alt="Menu">
+            </button>
+            <h1>Lectura</h1>
+            <button type="button" class="icon-button" id="settingsButton" aria-label="Settings">
+                <img src="{{ static_url }}/icons/settings.svg" alt="Settings">
+            </button>
+        </header>
+
+        <main>
+            <form id="lectureForm" enctype="multipart/form-data">
+                <div class="upload-section">
+                    <h2><span class="icon">🎤</span> Lecture Audio File:</h2>
+                    <div class="upload-box" id="audioUpload">
+                        <input type="file" name="recording" id="audioFile" accept="audio/*,.mp3,.wav,.m4a,.ogg" hidden>
+                        <div class="upload-content">
+                            <div class="cloud-icon">☁️</div>
+                            <p>Choose file or drag here</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="slides">Slides (Optional):</label>
-                    <input type="file" id="slides" name="slides" accept=".pdf,.ppt,.pptx">
+
+                <div class="upload-section">
+                    <h2><span class="icon">📑</span> Slides (Optional):</h2>
+                    <div class="upload-box" id="slidesUpload">
+                        <input type="file" name="slides" id="slidesFile" accept=".pdf,.ppt,.pptx" hidden>
+                        <div class="upload-content">
+                            <div class="cloud-icon">☁️</div>
+                            <p>Choose file or drag here</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="model">Model Type:</label>
-                    <select id="model" name="model_type">
-                        <option value="base">Base</option>
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
+
+                <div class="model-section">
+                    <h2><span class="icon">⚙️</span> Whisper Model:</h2>
+                    <select name="model" id="whisperModel">
+                        <option value="base">Base - Balanced</option>
+                        <option value="small">Small - Improved</option>
+                        <option value="medium">Medium - Enhanced</option>
                     </select>
                 </div>
-                
-                <button type="submit">Generate Notes</button>
+
+                <button type="submit" id="generateButton" class="generate-button">
+                    <span class="icon">✏️</span> Generate Notes
+                </button>
             </form>
-        </div>
-        
-        <div id="loading" class="hidden">
-            <div class="spinner"></div>
-            <p>Processing lecture... This may take a few minutes.</p>
-        </div>
-        
-        <div id="results" class="hidden">
-            <h2>Generated Notes</h2>
-            <div id="notesContent" class="markdown-body"></div>
-            <button id="downloadBtn">Download Notes</button>
+
+            <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing your lecture... This may take a few minutes.</p>
+            </div>
+
+            <div id="resultContainer" class="result-container" style="display: none;">
+                <h2>Generated Notes</h2>
+                <div id="resultLinks"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button type="button" class="close-button" id="closeSettingsButton">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Appearance</h3>
+                    <div class="setting-item">
+                        <label for="themeToggle">Theme:</label>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Light</span>
+                            <label class="switch">
+                                <input type="checkbox" id="themeToggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="toggle-label">Dark</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Model Settings</h3>
+                    <div class="setting-item">
+                        <label for="modelSelector">OpenAI Model:</label>
+                        <select id="modelSelector" class="settings-select">
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            <option value="gpt-4" selected>GPT-4</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                            <option value="custom">Custom Model</option>
+                        </select>
+                    </div>
+                    
+                    <div id="customModelContainer" class="setting-item" style="display: none;">
+                        <label for="customModel">Custom Model Name:</label>
+                        <input type="text" id="customModel" class="settings-input" placeholder="Enter model name">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="baseUrl">API Base URL (Optional):</label>
+                        <input type="text" id="baseUrl" class="settings-input" placeholder="https://api.openai.com/v1">
+                    </div>
+                </div>
+                
+                <div class="settings-actions">
+                    <button type="button" id="saveSettingsButton" class="primary-button">Save Settings</button>
+                    <button type="button" id="resetSettingsButton" class="secondary-button">Reset to Defaults</button>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="{{ url_for('static', path='script.js') }}"></script>
+
+    <script src="{{ static_url }}/js/script.js"></script>
 </body>
 </html> 

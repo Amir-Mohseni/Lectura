@@ -1,28 +1,21 @@
-FROM python:3.9-slim
+FROM python:3.9
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for whisper
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY src/ .
-
-# Create upload directory
-RUN mkdir uploads
+# Copy the rest of the application
+COPY . .
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV OPENAI_API_KEY=""
 
-# Expose port
-EXPOSE 8000
-
-# Run the application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"] 
+# Command to run the application
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--reload"] 

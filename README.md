@@ -2,6 +2,8 @@
 
 Lectura is an AI-powered lecture processing system that automatically converts lecture audio into well-structured study notes. Using advanced speech recognition and language models, it transcribes audio, detects slide transitions, and generates comprehensive notes in markdown format.
 
+Repository: [https://github.com/Amir-Mohseni/Lectura](https://github.com/Amir-Mohseni/Lectura)
+
 ## 🌟 Features
 
 - 🎙️ Audio transcription using Whisper
@@ -16,51 +18,51 @@ Lectura is an AI-powered lecture processing system that automatically converts l
 ### Using Docker (Recommended)
 
 1. Clone and navigate to the repository:
-```bash
-git clone https://github.com/Amir-Mohseni/lectura
-cd lectura
-```
+   ```bash
+   git clone https://github.com/Amir-Mohseni/lectura
+   cd lectura
+   ```
 
 2. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your API settings
-```
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API settings
+   ```
 
 3. Launch the application:
-```bash
-docker-compose up --build
-```
+   ```bash
+   docker-compose up --build
+   ```
 
 4. Open `http://localhost:8000` in your browser
 
 ### Manual Setup
 
 1. Install system dependencies:
-```bash
-# Ubuntu/Debian
-sudo apt-get update && sudo apt-get install -y ffmpeg
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update && sudo apt-get install -y ffmpeg
 
-# macOS
-brew install ffmpeg
-```
+   # macOS
+   brew install ffmpeg
+   ```
 
 2. Install Python packages:
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 3. Configure environment:
-```bash
-cp .env.example .env
-# Edit .env with your settings
-```
+   ```bash
+   cp .env.example .env
+   # Edit .env with your settings
+   ```
 
 4. Start the server:
-```bash
-cd src
-uvicorn app:app --reload
-```
+   ```bash
+   cd src
+   uvicorn app:app --reload
+   ```
 
 ## 🛠️ Configuration
 
@@ -108,20 +110,20 @@ lectura/
 
 ## 🔧 Troubleshooting
 
-- **Audio Processing Issues**
-  - Verify audio format compatibility
-  - Check FFmpeg installation
-  - Ensure adequate storage space
+### Audio Processing Issues
+- Verify audio format compatibility
+- Check FFmpeg installation
+- Ensure adequate storage space
 
-- **Note Generation Problems**
-  - Verify API key and permissions
-  - Check API rate limits
-  - Confirm internet connectivity
+### Note Generation Problems
+- Verify API key and permissions
+- Check API rate limits
+- Confirm internet connectivity
 
-- **Docker-related Issues**
-  - Verify Docker installation
-  - Check port 8000 availability
-  - Ensure sufficient system resources
+### Docker-related Issues
+- Verify Docker installation
+- Check port 8000 availability
+- Ensure sufficient system resources
 
 ## 📄 License
 

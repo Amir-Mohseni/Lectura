@@ -8,6 +8,7 @@ import os
 import uuid
 from lecture_processor import LectureProcessor
 from note_generator import NoteGenerator
+from fastapi import Request
 
 app = FastAPI(title="Lectura")
 
@@ -20,14 +21,17 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 @app.get("/", response_class=HTMLResponse)
-async def home(request):
+async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/process")
 async def process_lecture(
     audio: UploadFile = File(...),
     slides: UploadFile = None,
-    model_type: str = Form("base")
+    model_type: str = Form("base"),
+    api_base_url: str = Form(None),
+    api_key: str = Form(None),
+    api_model: str = Form(None)
 ):
     # Create unique session ID
     session_id = str(uuid.uuid4())
@@ -45,11 +49,11 @@ async def process_lecture(
         transcript = processor.process_audio(str(audio_path))
         slides_data = processor.extract_slides(transcript)
         
-        # Generate notes using configured API
+        # Use provided API settings or fall back to environment variables
         note_generator = NoteGenerator(
-            api_key=os.getenv("API_KEY"),
-            base_url=os.getenv("API_BASE_URL"),
-            model=os.getenv("API_MODEL")
+            api_key=api_key or os.getenv("API_KEY"),
+            base_url=api_base_url or os.getenv("API_BASE_URL"),
+            model=api_model or os.getenv("API_MODEL")
         )
         notes = note_generator.generate_notes(transcript, slides_data)
         
