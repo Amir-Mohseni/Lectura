@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecture Notes Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Lecture Notes Generator</h1>
+        
+        <div class="upload-form">
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="audio">Lecture Audio File:</label>
+                    <input type="file" id="audio" name="audio" accept="audio/*" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="slides">Slides (Optional):</label>
+                    <input type="file" id="slides" name="slides" accept=".pdf,.ppt,.pptx">
+                </div>
+                
+                <div class="form-group">
+                    <label for="model">Model Type:</label>
+                    <select id="model" name="model_type">
+                        <option value="base">Base</option>
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </div>
+                
+                <button type="submit">Generate Notes</button>
+            </form>
+        </div>
+        
+        <div id="loading" class="hidden">
+            <div class="spinner"></div>
+            <p>Processing lecture... This may take a few minutes.</p>
+        </div>
+        
+        <div id="results" class="hidden">
+            <h2>Generated Notes</h2>
+            <div id="notesContent" class="markdown-body"></div>
+            <button id="downloadBtn">Download Notes</button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="{{ url_for('static', path='script.js') }}"></script>
+</body>
+</html> 
