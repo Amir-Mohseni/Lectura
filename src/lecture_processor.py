@@ -1,7 +1,6 @@
 from typing import Optional, List, Dict
 import whisper
 from pathlib import Path
-import torch
 import logging
 
 logger = logging.getLogger("lectura.lecture_processor")
@@ -152,3 +151,7 @@ class LectureProcessor:
         except Exception as e:
             logger.error(f"Error extracting slides from PDF: {e}", exc_info=True)
             return [] 
+        
+if __name__ == "__main__":
+    lecture_processor = LectureProcessor()
+    

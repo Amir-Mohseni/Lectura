@@ -2,11 +2,12 @@ fastapi
 uvicorn
 jinja2
 openai
+torch
 whisper
 numpy
-torch
 python-multipart
 markdown
 pymupdf
 ffmpeg-python
-pydub 
+pydub
+python-dotenv

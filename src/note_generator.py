@@ -1,17 +1,19 @@
 from typing import List, Dict
 from openai import OpenAI
 from markdown import markdown
+from dotenv import load_dotenv
 import re
 import logging
 import os
 
 logger = logging.getLogger("lectura")
+load_dotenv(override=True)
 
 class NoteGenerator:
     def __init__(self, api_key=None, model=None, base_url=None):
         # Use provided values or fall back to environment variables
         self.api_key = api_key or os.getenv("API_KEY")
-        self.model = model or os.getenv("API_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        self.model = model or os.getenv("API_MODEL")
         self.base_url = base_url or os.getenv("API_BASE_URL")
         
         if not self.api_key:
@@ -72,8 +74,8 @@ class NoteGenerator:
                     {"role": "system", "content": "You are an expert note-taking assistant."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,
-                max_tokens=2000
+                temperature=0.5,
+                max_tokens=2000,
             )
             
             # Extract and return the generated notes
@@ -130,9 +132,4 @@ class NoteGenerator:
         prompt += "4. Summary points at the end\n"
         
         logger.debug(f"Prompt created with length: {len(prompt)} characters")
-        return prompt 
-    
-if __name__ == "__main__":
-    note_generator = NoteGenerator()
-    notes = note_generator.generate_notes("Hello, world!", [])
-    print(notes)
+        return prompt

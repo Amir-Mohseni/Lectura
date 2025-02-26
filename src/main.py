@@ -66,7 +66,7 @@ def transcribe_audio(audio_path, language="en"):
     transcript = processor.process_audio(audio_path)
     return transcript
 
-def generate_notes_from_transcript(transcript, model="gpt-3.5-turbo"):
+def generate_notes_from_transcript(transcript, model="gpt-4o"):
     """Generate notes from transcript without slides"""
     logger.info("Generating notes from transcript")
     note_generator = NoteGenerator(
@@ -78,7 +78,7 @@ def generate_notes_from_transcript(transcript, model="gpt-3.5-turbo"):
     notes = note_generator.generate_notes(transcript, slides)
     return notes
 
-def generate_notes_from_transcript_and_slides(transcript, slides_path, model="gpt-3.5-turbo"):
+def generate_notes_from_transcript_and_slides(transcript, slides_path, model="gpt-4o"):
     """Generate notes from transcript and slides"""
     logger.info(f"Generating notes from transcript and slides: {slides_path}")
     note_generator = NoteGenerator(
@@ -97,7 +97,7 @@ async def generate_notes(
     recording: UploadFile,
     slides: Optional[UploadFile] = None,
     language: str = "en",
-    model: str = "gpt-3.5-turbo",
+    model: str = "gpt-4o",
 ):
     # Create a temporary directory for processing
     temp_dir = tempfile.mkdtemp()
