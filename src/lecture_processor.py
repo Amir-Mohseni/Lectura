@@ -2,6 +2,7 @@ from typing import Optional, List, Dict
 import whisper
 from pathlib import Path
 import logging
+import torch
 
 logger = logging.getLogger("lectura.lecture_processor")
 
