@@ -22,7 +22,7 @@ class AudioProcessor:
             self.device = "cuda:0" if cuda_available else "cpu"
             self.torch_dtype = torch.float16 if cuda_available else torch.float32
             
-            logger.info(f"Using device: {self.device}, dtype: {self.torch_dtype}")
+            logger.info(f"Device set to use {self.device}")
             
             # Initialize the model
             logger.info("Loading Whisper-large-v3-turbo model...")
@@ -52,6 +52,10 @@ class AudioProcessor:
             logger.info("Whisper-large-v3-turbo model loaded successfully")
             self.model_loaded = True
             
+            # Store the processor for potential direct use
+            self.processor = processor
+            self.model = model
+            
         except ImportError as e:
             logger.error(f"Could not import required dependencies: {e}")
             self.model_loaded = False
@@ -71,7 +75,7 @@ class AudioProcessor:
         Returns:
             Dict: Transcription results
         """
-        logger.info(f"Transcribing audio file: {audio_path} (language: {language})")
+        logger.info(f"Transcribing audio file: {audio_path}")
         
         audio_path = Path(audio_path)
         if not audio_path.exists():
@@ -79,14 +83,35 @@ class AudioProcessor:
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
         
         try:
-            # Set language if provided
-            pipe_kwargs = {}
-            if language:
-                pipe_kwargs["language"] = language
-                pipe_kwargs["task"] = "transcribe"
+            # Try different approaches to handle different versions of the transformers library
             
-            # Transcribe audio
-            result = self.pipe(str(audio_path), **pipe_kwargs)
+            # Approach 1: Direct call without parameters
+            try:
+                logger.info("Attempting direct transcription without parameters")
+                result = self.pipe(str(audio_path))
+                logger.info("Direct transcription successful")
+            except Exception as e1:
+                logger.warning(f"Direct transcription failed: {e1}")
+                
+                # Approach 2: Using generate_kwargs
+                try:
+                    logger.info("Attempting transcription with generate_kwargs")
+                    result = self.pipe(
+                        str(audio_path),
+                        generate_kwargs={"task": "transcribe", "language": language if language else None}
+                    )
+                    logger.info("Transcription with generate_kwargs successful")
+                except Exception as e2:
+                    logger.warning(f"Transcription with generate_kwargs failed: {e2}")
+                    
+                    # Approach 3: Using task parameter
+                    try:
+                        logger.info("Attempting transcription with task parameter")
+                        result = self.pipe(str(audio_path), task="transcribe")
+                        logger.info("Transcription with task parameter successful")
+                    except Exception as e3:
+                        logger.error(f"All transcription approaches failed: {e1} / {e2} / {e3}")
+                        raise Exception(f"Audio transcription failed after multiple attempts")
             
             # Format result to match the expected structure
             transcript = {
