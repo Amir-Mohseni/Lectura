@@ -118,16 +118,28 @@ class LectureProcessor:
             logger.error(f"Error during slide extraction: {str(e)}", exc_info=True)
             raise Exception(f"Slide extraction failed: {str(e)}")
     
-    def extract_slides_from_pdf(self, pdf_path: str) -> List[Dict]:
-        """Extract slide information from a PDF file.
-        
-        Args:
-            pdf_path (str): Path to the PDF file
+    def extract_slides_from_pdf(self, pdf_path):
+        """Extract slide information from a PDF file using OlmOCR if available"""
+        try:
+            # Import the PDFProcessor
+            from src.pdf_processor import PDFProcessor
             
-        Returns:
-            List[Dict]: List of extracted slide contents with timestamps
-        """
-        logger.info(f"Extracting slides from PDF file: {pdf_path}")
+            # Initialize the PDF processor
+            pdf_processor = PDFProcessor()
+            
+            # Process the PDF
+            slides = pdf_processor.process_pdf(pdf_path)
+            
+            return slides
+        except ImportError:
+            logger.warning("PDFProcessor not available, falling back to basic extraction")
+            return self._basic_pdf_extraction(pdf_path)
+        except Exception as e:
+            logger.error(f"Error extracting slides from PDF: {e}", exc_info=True)
+            return self._basic_pdf_extraction(pdf_path)
+    
+    def _basic_pdf_extraction(self, pdf_path):
+        """Basic fallback method for PDF text extraction"""
         try:
             import fitz  # PyMuPDF
             slides = []
@@ -147,11 +159,11 @@ class LectureProcessor:
             return slides
         except ImportError:
             # If PyMuPDF is not installed, return empty slides
-            logger.warning("PyMuPDF not installed. Cannot extract slides from PDF.")
+            logger.error("PyMuPDF not installed. Cannot extract slides from PDF.")
             return []
         except Exception as e:
-            logger.error(f"Error extracting slides from PDF: {e}", exc_info=True)
-            return [] 
+            logger.error(f"Error in basic PDF extraction: {e}", exc_info=True)
+            return []
         
 if __name__ == "__main__":
     lecture_processor = LectureProcessor()

@@ -2,8 +2,16 @@ fastapi
 uvicorn
 jinja2
 openai
-torch
-whisper
+# Use a flexible PyTorch installation that works on both CPU and GPU
+torch>=2.0.0
+# Hugging Face dependencies for Whisper-large-v3-turbo
+transformers>=4.36.0
+datasets
+accelerate
+safetensors
+Pillow
+# Remove original whisper as we're using the Hugging Face version
+# whisper
 numpy
 python-multipart
 markdown
@@ -11,3 +19,5 @@ pymupdf
 ffmpeg-python
 pydub
 python-dotenv
+# OlmOCR dependencies
+git+https://github.com/allenai/olmocr.git

@@ -1,19 +1,25 @@
-FROM python:3.10-slim
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 WORKDIR /app
 
-# Install system dependencies
+# Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dev \
     ffmpeg \
     build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# Create symbolic links for Python
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
+
 # Copy requirements first for better caching
 COPY requirements.txt .
 
 # Install Python dependencies
-# No longer installing PyTorch separately - let pip resolve the best version
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
@@ -21,6 +27,7 @@ COPY . .
 
 # Set environment variables
 ENV PYTHONPATH=/app
+ENV CUDA_VISIBLE_DEVICES=0
 
 # Expose the port
 EXPOSE 8000

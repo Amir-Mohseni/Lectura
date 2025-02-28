@@ -59,11 +59,12 @@ async def read_root(request: Request):
     )
 
 def transcribe_audio(audio_path, language="en"):
-    """Transcribe audio file using Whisper model"""
+    """Transcribe audio file using Whisper-large-v3-turbo model"""
     logger.info(f"Transcribing audio file: {audio_path}")
-    whisper_model = os.getenv("WHISPER_MODEL", "base")
-    processor = LectureProcessor(model_type=whisper_model)
-    transcript = processor.process_audio(audio_path)
+    from src.audio_processor import AudioProcessor
+    
+    processor = AudioProcessor()
+    transcript = processor.transcribe_audio(audio_path, language)
     return transcript
 
 def generate_notes_from_transcript(transcript, model="gpt-4o"):

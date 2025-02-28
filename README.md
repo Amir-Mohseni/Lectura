@@ -1,137 +1,167 @@
-# Lectura 🎓
+# Lectura - AI-Powered Lecture Notes Generator
 
-Lectura is an AI-powered lecture processing system that automatically converts lecture audio into well-structured study notes. Using advanced speech recognition and language models, it transcribes audio, detects slide transitions, and generates comprehensive notes in markdown format.
+Lectura is an advanced tool that automatically generates comprehensive, well-structured notes from lecture recordings and slides. It uses state-of-the-art AI models for audio transcription and note generation.
 
-Repository: [https://github.com/Amir-Mohseni/Lectura](https://github.com/Amir-Mohseni/Lectura)
+## Features
 
-## 🌟 Features
+- **Audio Transcription**: Uses OpenAI's Whisper-large-v3-turbo model for accurate speech-to-text conversion
+- **PDF Slide Processing**: Extracts text from PDF slides using OlmOCR, a powerful OCR model
+- **Note Generation**: Creates well-structured, comprehensive notes using LLMs
+- **GPU Acceleration**: Supports GPU acceleration for faster processing
+- **Docker Support**: Easy deployment with Docker, including GPU support
+- **Modern UI**: Clean, responsive interface with dark mode support
 
-- 🎙️ Audio transcription using Whisper
-- 📊 Automatic slide content detection and integration
-- 🤖 AI-powered note generation with customizable LLM support
-- 📝 Clean web interface for file uploads
-- ⬇️ Downloadable markdown-formatted notes
-- 🔄 Support for multiple AI providers
+## Requirements
 
-## 🚀 Quick Start
+- Python 3.10+
+- PyTorch 2.0+
+- 8GB+ RAM (16GB+ recommended)
+- NVIDIA GPU with 8GB+ VRAM (optional, for GPU acceleration)
+- NVIDIA Container Toolkit (for Docker GPU support)
 
-### Using Docker (Recommended)
+## Installation
 
-1. Clone and navigate to the repository:
+### Option 1: Using Docker (Recommended)
+
+1. Clone the repository:
    ```bash
-   git clone https://github.com/Amir-Mohseni/lectura
+   git clone https://github.com/yourusername/lectura.git
    cd lectura
    ```
 
-2. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API settings
+2. Create a `.env` file with your API credentials:
+   ```
+   API_BASE_URL="https://router.huggingface.co/hf-inference/v1"
+   API_KEY=your_huggingface_api_key
+   API_MODEL=meta-llama/Llama-3.2-3B-Instruct
+   PORT=8000
+   DEBUG=False
    ```
 
-3. Launch the application:
+3. Make the run script executable:
    ```bash
-   docker-compose up --build
+   chmod +x run_with_gpu.sh
    ```
 
-4. Open `http://localhost:8000` in your browser
-
-### Manual Setup
-
-1. Install system dependencies:
+4. Run the application:
    ```bash
-   # Ubuntu/Debian
-   sudo apt-get update && sudo apt-get install -y ffmpeg
+   ./run_with_gpu.sh
+   ```
+   This script will automatically detect if you have a GPU and use the appropriate Docker configuration.
 
-   # macOS
-   brew install ffmpeg
+### Option 2: Manual Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/lectura.git
+   cd lectura
    ```
 
-2. Install Python packages:
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Configure environment:
+4. Create a `.env` file with your API credentials (as shown above)
+
+5. Run the application:
    ```bash
-   cp .env.example .env
-   # Edit .env with your settings
+   uvicorn src.main:app --host 0.0.0.0 --port 8000
    ```
 
-4. Start the server:
-   ```bash
-   cd src
-   uvicorn app:app --reload
-   ```
+## Usage
 
-## 🛠️ Configuration
+1. Open your browser and navigate to `http://localhost:8000`
 
-### Environment Variables
-```env
-# API Configuration
-API_BASE_URL=https://api.openai.com/v1
-API_KEY=your-api-key-here
-API_MODEL=gpt-4
+2. Upload a lecture recording (MP3, WAV, M4A, OGG formats supported)
 
-# Whisper Configuration
-WHISPER_MODEL=base  # tiny, base, small, medium, large
+3. Optionally upload lecture slides (PDF format)
 
-# Server Configuration
-PORT=8000
-DEBUG=False
+4. Click "Generate Notes" and wait for the processing to complete
+
+5. View and download your generated notes in Markdown format
+
+## Advanced Configuration
+
+### GPU Support
+
+For GPU acceleration, ensure you have:
+- NVIDIA GPU with CUDA support
+- NVIDIA drivers installed
+- NVIDIA Container Toolkit (for Docker)
+
+The application will automatically detect and use your GPU if available. For Docker, use:
+```bash
+docker-compose -f docker-compose.gpu.yml up --build
 ```
 
-## 📁 Project Structure
+### API Configuration
+
+Lectura uses the Hugging Face API for note generation. You can configure:
+- `API_BASE_URL`: The Hugging Face API endpoint
+- `API_KEY`: Your Hugging Face API key
+- `API_MODEL`: The model to use for note generation (default: meta-llama/Llama-3.2-3B-Instruct)
+
+### Testing
+
+Several test scripts are provided to verify your installation:
+
+```bash
+# Make test scripts executable
+bash make_scripts_executable.sh
+
+# Test API connection
+./test_api.sh
+
+# Test PDF processing
+./test_pdf.sh
+
+# Test note generation
+./test_notes.sh
 ```
-lectura/
-├── src/
-│   ├── app.py                # FastAPI web application
-│   ├── lecture_processor.py  # Audio processing & transcription
-│   ├── note_generator.py     # Note generation with LLMs
-│   ├── static/              # Frontend assets
-│   └── templates/           # HTML templates
-├── docker-compose.yml        # Docker configuration
-├── Dockerfile               # Container definition
-├── requirements.txt         # Python dependencies
-└── README.md               # Documentation
-```
 
-## 🔍 Usage
+## Architecture
 
-1. Upload lecture audio (supported: mp3, wav, m4a)
-2. Optionally upload lecture slides (PDF, PPT, PPTX)
-3. Choose Whisper model size:
-   - `base`: Balanced speed/accuracy
-   - `small`: Faster processing
-   - `medium`: Better accuracy
-   - `large`: Highest quality
-4. Click "Generate Notes"
-5. Download or view the generated markdown notes
+Lectura consists of several components:
 
-## 🔧 Troubleshooting
+1. **AudioProcessor**: Transcribes lecture recordings using Whisper-large-v3-turbo
+2. **PDFProcessor**: Extracts text from PDF slides using OlmOCR
+3. **NoteGenerator**: Generates structured notes using LLMs
+4. **Web Interface**: FastAPI backend with a responsive frontend
 
-### Audio Processing Issues
-- Verify audio format compatibility
-- Check FFmpeg installation
-- Ensure adequate storage space
+## Troubleshooting
 
-### Note Generation Problems
-- Verify API key and permissions
-- Check API rate limits
-- Confirm internet connectivity
+### Common Issues
 
-### Docker-related Issues
-- Verify Docker installation
-- Check port 8000 availability
-- Ensure sufficient system resources
+1. **GPU Memory Error**: If you encounter GPU memory errors, try:
+   - Using a smaller model
+   - Running on CPU instead
+   - Increasing your Docker container's memory limit
 
-## 📄 License
+2. **Installation Errors**: If you encounter errors installing dependencies:
+   - Ensure you have the latest pip: `pip install --upgrade pip`
+   - Install PyTorch separately following instructions at pytorch.org
+   - Install system dependencies: `apt-get install ffmpeg build-essential git`
 
-MIT License - See LICENSE file for details.
+3. **API Errors**: If you encounter API errors:
+   - Verify your API key is correct
+   - Check your internet connection
+   - Ensure the model you're using is available in the Hugging Face API
 
-## 🤝 Contributing
+## License
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+[MIT License](LICENSE)
 
----
-Created by [Amir Mohseni](https://github.com/Amir-Mohseni)
+## Acknowledgements
+
+- [OpenAI Whisper](https://github.com/openai/whisper)
+- [OlmOCR](https://github.com/allenai/olmocr)
+- [Hugging Face Transformers](https://github.com/huggingface/transformers)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [PyTorch](https://pytorch.org/)
