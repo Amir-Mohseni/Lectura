@@ -17,17 +17,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install transformers with their dependencies first
-RUN pip install --no-cache-dir transformers>=4.36.0 accelerate safetensors sentencepiece
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir transformers>=4.36.0 accelerate safetensors sentencepiece
 
 # Set the working directory
 WORKDIR /app
 
-# Copy requirements file and install Python dependencies
+# Copy requirements file
 COPY requirements.txt .
 
-# Install PyMuPDF separately with a specific version to avoid build issues
-RUN pip install --no-cache-dir pymupdf==1.23.7 && \
-    pip install --no-cache-dir -r requirements.txt
+# Modify requirements to exclude PyMuPDF
+RUN grep -v "pymupdf\|git+" requirements.txt > requirements_modified.txt
+
+# Install dependencies excluding PyMuPDF and git+ dependencies
+RUN pip install --no-cache-dir -r requirements_modified.txt
+
+# Install PyMuPDF using a pre-built wheel
+RUN pip install --no-cache-dir --only-binary :all: pymupdf==1.22.3 || pip install --no-cache-dir pymupdf==1.22.3
+
+# Install git+ dependencies separately
+RUN pip install --no-cache-dir git+https://github.com/allenai/olmocr.git
 
 # Copy the application code
 COPY . .

@@ -47,17 +47,30 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 3. Build and run with Docker:
 
-   **Option A: Using the rebuild script (recommended)**
+   **Option A: Using the run script (easiest)**
+   ```bash
+   # Make the script executable
+   chmod +x run_with_gpu.sh
+   
+   # Run the application
+   ./run_with_gpu.sh
+   ```
+   This script will automatically detect if you have a GPU, build the Docker image if needed, and run the application.
+
+   **Option B: Using the rebuild script (for troubleshooting)**
    ```bash
    # Make the script executable
    chmod +x rebuild_docker.sh
    
-   # Build and run
+   # Rebuild the Docker image
    ./rebuild_docker.sh
+   
+   # Then run the application
+   docker-compose up  # or docker-compose -f docker-compose.gpu.yml up for GPU
    ```
-   This script will automatically detect if you have a GPU and use the appropriate Docker configuration.
+   Use this option if you're experiencing build issues or need to rebuild the Docker image from scratch.
 
-   **Option B: Manual Docker commands**
+   **Option C: Manual Docker commands**
    ```bash
    # For systems with NVIDIA GPU:
    docker-compose -f docker-compose.gpu.yml up --build
@@ -97,8 +110,11 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 4. Install dependencies:
    ```bash
-   # Install PyMuPDF separately to avoid build issues
-   pip install pymupdf==1.23.7
+   # Upgrade pip
+   pip install --upgrade pip
+   
+   # Install PyMuPDF using a pre-built wheel
+   pip install --only-binary :all: pymupdf==1.22.3 || pip install pymupdf==1.22.3
    
    # Install the rest of the dependencies
    pip install -r requirements.txt
@@ -291,13 +307,21 @@ Lectura consists of several components:
 
 2. **Installation Errors**: If you encounter errors installing dependencies:
    - Ensure you have the latest pip: `pip install --upgrade pip`
-   - Install system dependencies: `apt-get install ffmpeg git poppler-utils`
+   - Install system dependencies: `apt-get install ffmpeg git poppler-utils libffi-dev libssl-dev`
 
 3. **Docker Build Errors**: If you encounter errors during Docker build:
    - Use the rebuild script: `./rebuild_docker.sh`
    - This script rebuilds with `--no-cache` to ensure clean installation
-   - For PyMuPDF specific errors, the Dockerfile now installs a specific version (1.23.7) to avoid build issues
-   - If you're on ARM architecture (Apple M1/M2), PyMuPDF build issues are common and should be resolved by our Dockerfile
+   - For PyMuPDF specific errors, we now use a pre-built wheel (version 1.22.3) to avoid build issues
+   - If you're on ARM architecture (Apple M1/M2/M3), PyMuPDF build issues are common and should be resolved by our updated Dockerfile
+   - If you still encounter issues, try manually building with:
+     ```bash
+     # For CPU
+     docker build --no-cache -t lectura:latest .
+     
+     # For GPU
+     docker build --no-cache -f Dockerfile.gpu -t lectura:gpu .
+     ```
 
 4. **API Errors**: If you encounter API errors:
    - Verify your API key is correct
