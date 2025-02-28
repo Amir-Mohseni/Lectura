@@ -131,24 +131,7 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 You can run Lectura directly in Google Colab, which provides free GPU access:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Amir-Mohseni/lectura/blob/main/lectura_colab.ipynb)
-
-1. Click the "Open in Colab" button above to open the ready-to-use notebook
-
-2. Enable GPU acceleration:
-   - Click on "Runtime" > "Change runtime type"
-   - Select "GPU" from the Hardware accelerator dropdown
-   - Click "Save"
-
-3. Follow the step-by-step instructions in the notebook to:
-   - Install dependencies
-   - Set up your API credentials
-   - Start the application with a public URL
-   - Process lecture recordings and slides
-
-This is the easiest way to try Lectura without any local installation.
-
-Alternatively, you can manually set up Colab:
+You can manually set up Colab:
 
 1. Create a new Colab notebook at [colab.research.google.com](https://colab.research.google.com)
 
