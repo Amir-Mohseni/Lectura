@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-import openai
+from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(
@@ -27,21 +27,28 @@ def test_api_connection():
     
     # Initialize the OpenAI client
     try:
-        client = openai.OpenAI(
+        client = OpenAI(
             api_key=api_key,
             base_url=api_base_url
         )
         
-        # Sample transcript for testing
-        transcript = """
-        Lecture Title: Introduction to Machine Learning
-
-        Machine learning is a subset of artificial intelligence that enables systems to learn patterns 
-        from data and make predictions or decisions without being explicitly programmed.
-
-        There are three main types of machine learning: supervised learning, unsupervised learning, 
-        and reinforcement learning.
-        """
+        # Load transcript from samples folder
+        samples_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "samples")
+        transcript_path = os.path.join(samples_dir, "transcript.txt")
+        
+        # Check if the file exists
+        if not os.path.exists(transcript_path):
+            logger.error(f"Sample transcript file not found at: {transcript_path}")
+            return False
+        
+        # Read the transcript file
+        try:
+            with open(transcript_path, 'r', encoding='utf-8') as f:
+                transcript = f.read()
+            logger.info(f"Loaded transcript from: {transcript_path}")
+        except Exception as e:
+            logger.error(f"Error reading transcript file: {e}")
+            return False
         
         # Create a simple prompt
         prompt = f"""
@@ -69,8 +76,32 @@ def test_api_connection():
             max_tokens=1000
         )
         
-        # Print the generated notes
-        notes = response.choices[0].message.content
+        # Log the raw response for debugging
+        logger.info(f"Response type: {type(response)}")
+        
+        # Extract the generated notes - handle different API response structures
+        try:
+            # Try standard OpenAI format
+            if hasattr(response, 'choices') and response.choices and hasattr(response.choices[0], 'message'):
+                notes = response.choices[0].message.content
+            # Try OpenRouter format
+            elif hasattr(response, 'choices') and response.choices and isinstance(response.choices[0], dict):
+                notes = response.choices[0].get('message', {}).get('content', '')
+            # Try raw dictionary format
+            elif isinstance(response, dict) and 'choices' in response:
+                notes = response['choices'][0].get('message', {}).get('content', '')
+            else:
+                # Last resort: convert to string
+                logger.warning("Unexpected response format. Converting to string.")
+                notes = str(response)
+                
+            if not notes:
+                logger.warning("Could not extract notes from response. Using raw response.")
+                notes = str(response)
+        except Exception as e:
+            logger.warning(f"Error extracting notes from response: {e}")
+            notes = f"Error extracting notes: {str(e)}\nRaw response: {str(response)}"
+        
         logger.info("API request successful!")
         print("\n" + "="*50 + " GENERATED NOTES " + "="*50)
         print(notes)

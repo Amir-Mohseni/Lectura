@@ -32,20 +32,23 @@ def test_note_generation():
         base_url=api_base_url
     )
     
-    # Sample transcript for testing
-    transcript = """
-    Lecture Title: Introduction to Machine Learning
-
-Professor: Good morning, everyone. Today, we'll introduce the basic concepts of machine learning. Machine learning is a subset of artificial intelligence that enables systems to learn patterns from data and make predictions or decisions without being explicitly programmed.
-
-There are three main types of machine learning: supervised learning, unsupervised learning, and reinforcement learning.
-	•	Supervised Learning: In this approach, we train models on labeled data. For example, if we want to classify emails as spam or not spam, we provide examples of both categories to the algorithm. Common algorithms include decision trees, support vector machines, and neural networks.
-	•	Unsupervised Learning: Here, the data is unlabeled, and the algorithm must find patterns or groupings by itself. Clustering and dimensionality reduction techniques fall under this category—like k-means clustering and principal component analysis (PCA).
-	•	Reinforcement Learning: This is based on an agent interacting with an environment and learning from feedback in the form of rewards. A famous example is AlphaGo, which learned to play Go at a superhuman level.
-
-Machine learning models require data preprocessing, including cleaning, normalization, and feature selection. Choosing the right model and tuning hyperparameters are also crucial for achieving good performance.
-
-That's a brief overview. In the next session, we'll dive deeper into model evaluation techniques like cross-validation and bias-variance tradeoff. Any questions?"""
+    # Load transcript from samples folder
+    samples_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "samples")
+    transcript_path = os.path.join(samples_dir, "transcript.txt")
+    
+    # Check if the file exists
+    if not os.path.exists(transcript_path):
+        logger.error(f"Sample transcript file not found at: {transcript_path}")
+        return False
+    
+    # Read the transcript file
+    try:
+        with open(transcript_path, 'r', encoding='utf-8') as f:
+            transcript = f.read()
+        logger.info(f"Loaded transcript from: {transcript_path}")
+    except Exception as e:
+        logger.error(f"Error reading transcript file: {e}")
+        return False
     
     # Generate notes
     try:

@@ -13,6 +13,7 @@ Pillow
 # Remove original whisper as we're using the Hugging Face version
 # whisper
 numpy
+scipy
 python-multipart
 markdown
 pymupdf
