@@ -13,5 +13,5 @@ services:
       - API_MODEL=${API_MODEL}
       - PORT=${PORT}
       - DEBUG=${DEBUG}
-    command: uvicorn src.app:app --host 0.0.0.0 --reload
+    command: uvicorn src.main:app --host 0.0.0.0 --reload
     restart: unless-stopped 

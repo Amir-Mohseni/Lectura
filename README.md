@@ -49,34 +49,25 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
    **Option A: Using the run script (easiest)**
    ```bash
-   # Make the script executable
-   chmod +x run_with_gpu.sh
-   
-   # Run the application
-   ./run_with_gpu.sh
-   ```
-   This script will automatically detect if you have a GPU, build the Docker image if needed, and run the application.
-
-   **Option B: Using the rebuild script (for troubleshooting)**
-   ```bash
-   # Make the script executable
    chmod +x rebuild_docker.sh
-   
-   # Rebuild the Docker image
    ./rebuild_docker.sh
-   
-   # Then run the application
-   docker-compose up  # or docker-compose -f docker-compose.gpu.yml up for GPU
+   docker-compose up
    ```
-   Use this option if you're experiencing build issues or need to rebuild the Docker image from scratch.
-
-   **Option C: Manual Docker commands**
-   ```bash
-   # For systems with NVIDIA GPU:
-   docker-compose -f docker-compose.gpu.yml up --build
    
-   # For systems without GPU:
-   docker-compose up --build
+   The script will automatically detect if you have a GPU and use the appropriate configuration.
+
+   **Option B: Manual Docker commands**
+   
+   For CPU:
+   ```bash
+   docker-compose build
+   docker-compose up
+   ```
+   
+   For GPU (requires NVIDIA Container Toolkit):
+   ```bash
+   docker-compose -f docker-compose.gpu.yml build
+   docker-compose -f docker-compose.gpu.yml up
    ```
 
 4. Access the application at http://localhost:8000
@@ -89,43 +80,40 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
    cd lectura
    ```
 
-2. Install system dependencies:
+2. Install FFmpeg and other system dependencies:
+   
+   **Ubuntu/Debian:**
    ```bash
-   # Ubuntu/Debian
-   sudo apt-get update && sudo apt-get install -y ffmpeg build-essential poppler-utils libffi-dev libssl-dev
+   sudo apt-get update
+   sudo apt-get install -y ffmpeg poppler-utils build-essential
+   ```
    
-   # macOS
+   **macOS:**
+   ```bash
    brew install ffmpeg poppler
-   
-   # Windows
-   # Install ffmpeg from https://ffmpeg.org/download.html
-   # Install poppler from https://github.com/oschwartz10612/poppler-windows/releases
    ```
 
-3. Create a virtual environment:
+3. Create a virtual environment and install dependencies:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-4. Install dependencies:
-   ```bash
-   # Upgrade pip
    pip install --upgrade pip
-   
-   # Install PyMuPDF using a pre-built wheel
-   pip install --only-binary :all: pymupdf==1.22.3 || pip install pymupdf==1.22.3
-   
-   # Install the rest of the dependencies
    pip install -r requirements.txt
    ```
 
-5. Create a `.env` file with your API credentials (as shown above)
-
-6. Run the application:
+4. Set up environment variables:
    ```bash
-   uvicorn src.app:app --host 0.0.0.0 --port 8000
+   export API_BASE_URL="https://router.huggingface.co/hf-inference/v1"
+   export API_KEY=your_huggingface_api_key
+   export API_MODEL=meta-llama/Llama-3.2-3B-Instruct
    ```
+
+5. Run the application:
+   ```bash
+   uvicorn src.app:app --reload
+   ```
+
+6. Access the application at http://localhost:8000
 
 ### Option 3: Running in Google Colab
 
@@ -345,3 +333,28 @@ Lectura consists of several components:
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [Transformers](https://github.com/huggingface/transformers)
 - [Docker](https://www.docker.com/)
+
+### Static Files Not Loading (404 Errors)
+
+If you encounter 404 errors for static files (CSS, JavaScript, icons), ensure you're using the correct entry point:
+
+- For Docker: The application should use `src.main:app` as the entry point
+- For manual installation: Use `src.app:app` as the entry point
+
+The Docker configuration has been updated to use `src.main:app` which has the correct paths for static files in the Docker environment.
+
+### PyMuPDF Installation Issues
+
+If you encounter issues with PyMuPDF installation, especially on ARM architectures:
+
+1. Try installing with the pre-built wheel:
+   ```bash
+   pip install --only-binary :all: pymupdf==1.22.3
+   ```
+
+2. If that fails, install from source:
+   ```bash
+   pip install pymupdf==1.22.3
+   ```
+
+3. For Docker, the Dockerfile has been updated to try both methods.

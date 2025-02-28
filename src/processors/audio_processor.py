@@ -23,7 +23,6 @@ class AudioProcessor:
             self.pipe = pipeline(
                 "automatic-speech-recognition", 
                 model="openai/whisper-large-v3-turbo",
-                device="auto"  # Let transformers decide the best device
             )
             
             logger.info("Whisper-large-v3-turbo model loaded successfully")
@@ -74,7 +73,7 @@ class AudioProcessor:
             # The output should match the example format with "text" and "chunks"
             transcript = {
                 "text": result["text"],
-                "language": language
+                "language": 'en'
             }
             
             # Add chunks if available
