@@ -65,9 +65,13 @@ async def read_root(request: Request):
 def transcribe_audio(audio_path, language="en"):
     """Transcribe audio file using Whisper-large-v3-turbo model"""
     logger.info(f"Transcribing audio file: {audio_path}")
-    processor = AudioProcessor()
-    transcript = processor.transcribe_audio(audio_path, language)
-    return transcript
+    try:
+        processor = AudioProcessor()
+        transcript = processor.transcribe_audio(audio_path, language)
+        return transcript
+    except Exception as e:
+        logger.error(f"Error in transcribe_audio: {str(e)}", exc_info=True)
+        raise Exception(f"Failed to transcribe audio: {str(e)}")
 
 def generate_notes_from_transcript(transcript, model="gpt-4o"):
     """Generate notes from transcript without slides"""
@@ -153,7 +157,6 @@ def main():
     parser = argparse.ArgumentParser(description="Process lecture audio and generate notes")
     parser.add_argument("audio_path", help="Path to the lecture audio file")
     parser.add_argument("--output", "-o", help="Output directory for generated notes", default="output")
-    parser.add_argument("--model", "-m", help="Whisper model size", default="base")
     parser.add_argument("--openai-model", help="OpenAI model to use", default="gpt-4")
     parser.add_argument("--base-url", help="Base URL for API endpoint", default=None)
     args = parser.parse_args()
@@ -163,7 +166,7 @@ def main():
     output_dir.mkdir(exist_ok=True)
     
     # Initialize processors
-    processor = LectureProcessor(model_type=args.model)
+    processor = LectureProcessor()
     note_generator = NoteGenerator(
         api_key=os.getenv("OPENAI_API_KEY"), 
         model=args.openai_model,
@@ -174,9 +177,15 @@ def main():
     print("Transcribing audio...")
     transcript = processor.process_audio(args.audio_path)
     
-    # Extract slides
-    print("Extracting slide information...")
-    slides = processor.extract_slides(transcript)
+    # Extract slides if PDF file with same name exists
+    slides = []
+    pdf_path = Path(args.audio_path).with_suffix('.pdf')
+    if pdf_path.exists():
+        print(f"Found PDF file: {pdf_path}")
+        print("Extracting slide information...")
+        slides = processor.extract_slides_from_pdf(str(pdf_path))
+    else:
+        print("No PDF file found. Proceeding without slides.")
     
     # Generate notes
     print("Generating structured notes...")

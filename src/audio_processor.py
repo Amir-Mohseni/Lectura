@@ -1,8 +1,8 @@
-import torch
 import logging
 import os
 from pathlib import Path
 from typing import Dict, Any
+from transformers import pipeline
 
 logger = logging.getLogger("lectura.audio_processor")
 
@@ -10,43 +10,15 @@ class AudioProcessor:
     def __init__(self):
         """Initialize the audio processor with Whisper-large-v3-turbo model"""
         logger.info("Initializing AudioProcessor with Whisper-large-v3-turbo")
+        self.model_loaded = False
+        
         try:
-            # Import required libraries
-            from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
-            
-            # Check if CUDA is available
-            cuda_available = torch.cuda.is_available()
-            logger.info(f"CUDA available: {cuda_available}")
-            
-            # Set device and dtype
-            self.device = "cuda:0" if cuda_available else "cpu"
-            self.torch_dtype = torch.float16 if cuda_available else torch.float32
-            
-            logger.info(f"Using device: {self.device}, dtype: {self.torch_dtype}")
-            
-            # Initialize the model
+            # Initialize the model using pipeline directly
             logger.info("Loading Whisper-large-v3-turbo model...")
-            model_id = "openai/whisper-large-v3-turbo"
-            
-            # Load model with appropriate settings
-            model = AutoModelForSpeechSeq2Seq.from_pretrained(
-                model_id, 
-                torch_dtype=self.torch_dtype, 
-                low_cpu_mem_usage=True, 
-                use_safetensors=True
-            )
-            model.to(self.device)
-            
-            processor = AutoProcessor.from_pretrained(model_id)
-            
-            # Create pipeline
             self.pipe = pipeline(
-                "automatic-speech-recognition",
-                model=model,
-                tokenizer=processor.tokenizer,
-                feature_extractor=processor.feature_extractor,
-                torch_dtype=self.torch_dtype,
-                device=self.device,
+                "automatic-speech-recognition", 
+                model="openai/whisper-large-v3-turbo",
+                device="auto"
             )
             
             logger.info("Whisper-large-v3-turbo model loaded successfully")
@@ -54,11 +26,9 @@ class AudioProcessor:
             
         except ImportError as e:
             logger.error(f"Could not import required dependencies: {e}")
-            self.model_loaded = False
             raise ImportError(f"Failed to import required dependencies: {e}")
         except Exception as e:
             logger.error(f"Error initializing Whisper model: {e}", exc_info=True)
-            self.model_loaded = False
             raise Exception(f"Failed to initialize Whisper model: {e}")
     
     def transcribe_audio(self, audio_path: str, language: str = "en") -> Dict[str, Any]:
@@ -80,10 +50,7 @@ class AudioProcessor:
         
         try:
             # Set language if provided
-            pipe_kwargs = {}
-            if language:
-                pipe_kwargs["language"] = language
-                pipe_kwargs["task"] = "transcribe"
+            pipe_kwargs = {"return_timestamps": True, "task": "transcribe", "language": "en"}
             
             # Transcribe audio
             result = self.pipe(str(audio_path), **pipe_kwargs)

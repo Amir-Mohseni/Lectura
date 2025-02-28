@@ -1,4 +1,3 @@
-import torch
 import logging
 import os
 from pathlib import Path
@@ -10,24 +9,21 @@ class AudioProcessor:
     def __init__(self):
         """Initialize the audio processor with Whisper-large-v3-turbo model"""
         logger.info("Initializing AudioProcessor with Whisper-large-v3-turbo")
+        self.model_loaded = False
+        
         try:
             # Import required libraries
+            import transformers
             from transformers import pipeline
             
-            # Check if CUDA is available
-            cuda_available = torch.cuda.is_available()
-            logger.info(f"CUDA available: {cuda_available}")
-            
-            # Set device
-            self.device = "cuda:0" if cuda_available else "cpu"
-            logger.info(f"Device set to use {self.device}")
+            logger.info(f"Transformers version: {transformers.__version__}")
             
             # Create pipeline - simplified approach
             logger.info("Loading Whisper-large-v3-turbo model...")
             self.pipe = pipeline(
                 "automatic-speech-recognition", 
                 model="openai/whisper-large-v3-turbo",
-                device=self.device
+                device="auto"  # Let transformers decide the best device
             )
             
             logger.info("Whisper-large-v3-turbo model loaded successfully")
@@ -35,11 +31,9 @@ class AudioProcessor:
             
         except ImportError as e:
             logger.error(f"Could not import required dependencies: {e}")
-            self.model_loaded = False
             raise ImportError(f"Failed to import required dependencies: {e}")
         except Exception as e:
             logger.error(f"Error initializing Whisper model: {e}", exc_info=True)
-            self.model_loaded = False
             raise Exception(f"Failed to initialize Whisper model: {e}")
     
     def transcribe_audio(self, audio_path: str, language: str = "en") -> Dict[str, Any]:
@@ -62,6 +56,10 @@ class AudioProcessor:
             }
         """
         logger.info(f"Transcribing audio file: {audio_path}")
+        
+        if not self.model_loaded:
+            logger.error("Model not loaded. Cannot transcribe audio.")
+            raise RuntimeError("Model not loaded. Cannot transcribe audio.")
         
         audio_path = Path(audio_path)
         if not audio_path.exists():

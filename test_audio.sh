@@ -32,12 +32,6 @@ python -c "import transformers" 2>/dev/null || {
     exit 1; 
 }
 
-python -c "import torch" 2>/dev/null || { 
-    echo "Error: torch package not found. Please install it with: pip install torch"; 
-    echo "If you're using a virtual environment, make sure it's activated.";
-    exit 1; 
-}
-
 # Run the audio processor test
 echo "Running audio processor test using sample from samples directory..."
 python -m src.tests.test_audio_processor
@@ -48,9 +42,8 @@ EXIT_CODE=$?
 # Exit with the same status as the Python script
 if [ $EXIT_CODE -ne 0 ]; then
     echo "Audio test failed. Please check the error messages above."
-    echo "Make sure all dependencies are installed: pip install -r requirements.txt"
-else
-    echo "Audio test completed successfully!"
+    exit $EXIT_CODE
 fi
 
-exit $EXIT_CODE 
+echo "Audio test completed successfully!"
+exit 0 

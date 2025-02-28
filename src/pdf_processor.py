@@ -1,4 +1,3 @@
-import torch
 import base64
 import os
 import tempfile
@@ -26,53 +25,15 @@ class PDFProcessor:
             self.build_finetuning_prompt = build_finetuning_prompt
             self.get_anchor_text = get_anchor_text
             
-            # Check if CUDA is available and has enough memory
-            cuda_available = torch.cuda.is_available()
-            logger.info(f"CUDA available: {cuda_available}")
-            
-            use_gpu = False
-            if cuda_available:
-                try:
-                    # Check GPU memory
-                    gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)  # Convert to GB
-                    logger.info(f"GPU memory: {gpu_memory:.2f} GB")
-                    
-                    # Only use GPU if it has enough memory (at least 8GB)
-                    if gpu_memory >= 8.0:
-                        use_gpu = True
-                        logger.info("Using GPU for OlmOCR model")
-                    else:
-                        logger.warning(f"GPU has insufficient memory ({gpu_memory:.2f} GB). Using CPU instead.")
-                except Exception as e:
-                    logger.warning(f"Error checking GPU memory: {e}. Using CPU instead.")
-            
-            self.device = torch.device("cuda" if use_gpu else "cpu")
-            
-            # Set appropriate dtype based on device
-            if use_gpu:
-                dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-            else:
-                # Use float32 for CPU to avoid precision issues
-                dtype = torch.float32
-            
-            logger.info(f"Using device: {self.device}, dtype: {dtype}")
-            
-            # Initialize the model with appropriate settings
             logger.info("Loading OlmOCR model...")
             
             # Load model with appropriate settings
             self.model = Qwen2VLForConditionalGeneration.from_pretrained(
                 "allenai/olmOCR-7B-0225-preview", 
-                torch_dtype=dtype,
-                low_cpu_mem_usage=True,
-                device_map="auto" if use_gpu else None
+                device_map="auto"
             ).eval()
             
             self.processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-7B-Instruct")
-            
-            # Only move to device if not using device_map="auto"
-            if not use_gpu:
-                self.model.to(self.device)
                 
             logger.info("OlmOCR model loaded successfully")
             

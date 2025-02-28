@@ -4,9 +4,11 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 ## Features
 
-- **Audio Transcription**: Uses OpenAI's Whisper-large-v3-turbo model for accurate speech-to-text conversion
-- **PDF Slide Processing**: Extracts text from PDF slides using OlmOCR, a powerful OCR model
-- **Note Generation**: Creates well-structured, comprehensive notes using LLMs
+- **Audio Transcription**: Utilizes Whisper-large-v3-turbo for accurate speech-to-text conversion
+- **PDF Slide Processing**: Extracts text from PDF slides using OlmOCR
+- **Note Generation**: Creates structured notes from lecture content
+- **Modern Web Interface**: Clean, responsive design for easy interaction
+- **Transformers Integration**: Leverages Hugging Face Transformers for state-of-the-art AI models
 - **GPU Acceleration**: Supports GPU acceleration for faster processing
 - **Docker Support**: Easy deployment with Docker, including GPU support
 - **Modern UI**: Clean, responsive interface with dark mode support
@@ -14,12 +16,13 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 ## Requirements
 
 - Python 3.10+
-- PyTorch 2.0+
+- FFmpeg (for audio processing)
+- Transformers 4.36.0+
+- Git (for OlmOCR installation)
 - 8GB+ RAM (16GB+ recommended)
 - NVIDIA GPU with 8GB+ VRAM (optional, for GPU acceleration)
 - NVIDIA Container Toolkit (for Docker GPU support)
 - System dependencies:
-  - ffmpeg (for audio processing)
   - poppler-utils (for PDF processing)
   - build-essential (for compiling dependencies)
 
@@ -174,14 +177,12 @@ Alternatively, you can manually set up Colab:
 lectura/
 ├── src/                      # Source code
 │   ├── processors/           # Input processing modules
-│   │   ├── audio_processor.py  # Audio transcription with Whisper
-│   │   ├── pdf_processor.py    # PDF processing with OlmOCR
-│   │   └── lecture_processor.py # Coordinates processing
+│   │   ├── audio_processor.py  # Audio transcription with Whisper-large-v3-turbo
+│   │   └── lecture_processor.py # Coordinates processing and PDF extraction
 │   ├── generators/           # Content generation modules
 │   │   └── note_generator.py   # Notes generation with LLMs
 │   ├── tests/                # Test modules
 │   │   ├── test_audio_processor.py
-│   │   ├── test_pdf_processor.py
 │   │   ├── test_api.py
 │   │   └── test_note_generator.py
 │   ├── static/               # Static assets (CSS, JS)
@@ -242,8 +243,8 @@ bash make_scripts_executable.sh
 
 Lectura consists of several components:
 
-1. **AudioProcessor**: Transcribes lecture recordings using Whisper-large-v3-turbo
-2. **PDFProcessor**: Extracts text from PDF slides using OlmOCR
+1. **AudioProcessor**: Transcribes lecture recordings using Whisper-large-v3-turbo via Transformers
+2. **LectureProcessor**: Extracts text from PDF slides using PyMuPDF and coordinates processing
 3. **NoteGenerator**: Generates structured notes using LLMs
 4. **Web Interface**: FastAPI backend with a responsive frontend
 
@@ -258,8 +259,7 @@ Lectura consists of several components:
 
 2. **Installation Errors**: If you encounter errors installing dependencies:
    - Ensure you have the latest pip: `pip install --upgrade pip`
-   - Install PyTorch separately following instructions at pytorch.org
-   - Install system dependencies: `apt-get install ffmpeg build-essential git`
+   - Install system dependencies: `apt-get install ffmpeg git poppler-utils`
 
 3. **API Errors**: If you encounter API errors:
    - Verify your API key is correct
@@ -293,4 +293,10 @@ Lectura consists of several components:
 - [OlmOCR](https://github.com/allenai/olmocr)
 - [Hugging Face Transformers](https://github.com/huggingface/transformers)
 - [FastAPI](https://fastapi.tiangolo.com/)
-- [PyTorch](https://pytorch.org/)
+
+## Technologies
+
+- [Python](https://www.python.org/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Transformers](https://github.com/huggingface/transformers)
+- [Docker](https://www.docker.com/)

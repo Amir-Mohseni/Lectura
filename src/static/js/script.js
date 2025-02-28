@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const customModelContainer = document.getElementById('customModelContainer');
     const customModel = document.getElementById('customModel');
     const baseUrl = document.getElementById('baseUrl');
-    const whisperModel = document.getElementById('whisperModel');
 
     // Default settings
     const defaultSettings = {
@@ -234,11 +233,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add OpenAI model and base URL from settings
             const modelName = settings.modelType === 'custom' ? settings.customModel : settings.modelType;
-            formData.append('openai_model', modelName);
+            formData.append('model', modelName);
             formData.append('base_url', settings.baseUrl || '');
             
             console.log('Submitting form with:');
-            console.log('- Whisper model:', formData.get('model'));
             console.log('- OpenAI model:', modelName);
             console.log('- Base URL:', settings.baseUrl || 'Default');
             

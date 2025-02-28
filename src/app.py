@@ -6,8 +6,8 @@ from pathlib import Path
 import shutil
 import os
 import uuid
-from lecture_processor import LectureProcessor
-from note_generator import NoteGenerator
+from src.processors.lecture_processor import LectureProcessor
+from src.generators.note_generator import NoteGenerator
 from fastapi import Request
 
 app = FastAPI(title="Lectura")
@@ -28,7 +28,6 @@ async def home(request: Request):
 async def process_lecture(
     audio: UploadFile = File(...),
     slides: UploadFile = None,
-    model_type: str = Form("base"),
     api_base_url: str = Form(None),
     api_key: str = Form(None),
     api_model: str = Form(None)
@@ -45,9 +44,16 @@ async def process_lecture(
             shutil.copyfileobj(audio.file, f)
             
         # Process audio
-        processor = LectureProcessor(model_type=model_type)
+        processor = LectureProcessor()
         transcript = processor.process_audio(str(audio_path))
-        slides_data = processor.extract_slides(transcript)
+        
+        # Process slides if provided
+        slides_data = []
+        if slides:
+            slides_path = session_dir / slides.filename
+            with slides_path.open("wb") as f:
+                shutil.copyfileobj(slides.file, f)
+            slides_data = processor.extract_slides_from_pdf(str(slides_path))
         
         # Use provided API settings or fall back to environment variables
         note_generator = NoteGenerator(
