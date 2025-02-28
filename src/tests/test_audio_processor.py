@@ -46,33 +46,26 @@ def test_audio_processing():
         # Process the audio
         try:
             logger.info(f"Transcribing audio: {audio_path}")
-            
-            # First try with default parameters
-            try:
-                transcript = audio_processor.transcribe_audio(audio_path)
-            except Exception as e:
-                logger.warning(f"Error with default parameters: {e}")
-                logger.info("Trying without language specification...")
-                
-                # If the original method fails, try a direct call to the pipeline
-                # This is a fallback mechanism in case the API has changed
-                try:
-                    result = audio_processor.pipe(str(audio_path))
-                    transcript = {
-                        "text": result["text"],
-                        "language": "en",
-                        "segments": []
-                    }
-                except Exception as e2:
-                    logger.error(f"Fallback also failed: {e2}")
-                    raise Exception(f"Both transcription methods failed: {e} / {e2}")
+            transcript = audio_processor.transcribe_audio(audio_path)
             
             # Print the results
             logger.info("Transcription completed successfully")
-            print("\n" + "="*50 + " TRANSCRIPTION " + "="*50)
-            # Print first 500 characters of transcript
+            
+            # Print the full text
+            print("\n" + "="*50 + " FULL TRANSCRIPTION " + "="*50)
             text = transcript["text"]
             print(f"{text[:500]}..." if len(text) > 500 else text)
+            
+            # Print chunks with timestamps
+            if "chunks" in transcript and transcript["chunks"]:
+                print("\n" + "="*50 + " TRANSCRIPTION CHUNKS " + "="*50)
+                for i, chunk in enumerate(transcript["chunks"][:10]):  # Show first 10 chunks
+                    start, end = chunk["timestamp"]
+                    print(f"Chunk {i+1}: [{start:.1f}s - {end:.1f}s]: {chunk['text']}")
+                
+                if len(transcript["chunks"]) > 10:
+                    print(f"... and {len(transcript['chunks']) - 10} more chunks")
+            
             print("="*120 + "\n")
             
             return True

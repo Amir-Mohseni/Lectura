@@ -24,6 +24,20 @@ else
     echo "No .env file found. Make sure environment variables are set."
 fi
 
+# Check for required dependencies
+echo "Checking for required dependencies..."
+python -c "import transformers" 2>/dev/null || { 
+    echo "Error: transformers package not found. Please install it with: pip install transformers"; 
+    echo "If you're using a virtual environment, make sure it's activated.";
+    exit 1; 
+}
+
+python -c "import torch" 2>/dev/null || { 
+    echo "Error: torch package not found. Please install it with: pip install torch"; 
+    echo "If you're using a virtual environment, make sure it's activated.";
+    exit 1; 
+}
+
 # Run the audio processor test
 echo "Running audio processor test using sample from samples directory..."
 python -m src.tests.test_audio_processor
@@ -35,6 +49,8 @@ EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
     echo "Audio test failed. Please check the error messages above."
     echo "Make sure all dependencies are installed: pip install -r requirements.txt"
+else
+    echo "Audio test completed successfully!"
 fi
 
 exit $EXIT_CODE 

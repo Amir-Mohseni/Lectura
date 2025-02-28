@@ -2,7 +2,7 @@ import torch
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 logger = logging.getLogger("lectura.processors.audio")
 
@@ -12,49 +12,26 @@ class AudioProcessor:
         logger.info("Initializing AudioProcessor with Whisper-large-v3-turbo")
         try:
             # Import required libraries
-            from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+            from transformers import pipeline
             
             # Check if CUDA is available
             cuda_available = torch.cuda.is_available()
             logger.info(f"CUDA available: {cuda_available}")
             
-            # Set device and dtype
+            # Set device
             self.device = "cuda:0" if cuda_available else "cpu"
-            self.torch_dtype = torch.float16 if cuda_available else torch.float32
-            
             logger.info(f"Device set to use {self.device}")
             
-            # Initialize the model
+            # Create pipeline - simplified approach
             logger.info("Loading Whisper-large-v3-turbo model...")
-            model_id = "openai/whisper-large-v3-turbo"
-            
-            # Load model with appropriate settings
-            model = AutoModelForSpeechSeq2Seq.from_pretrained(
-                model_id, 
-                torch_dtype=self.torch_dtype, 
-                low_cpu_mem_usage=True, 
-                use_safetensors=True
-            )
-            model.to(self.device)
-            
-            processor = AutoProcessor.from_pretrained(model_id)
-            
-            # Create pipeline
             self.pipe = pipeline(
-                "automatic-speech-recognition",
-                model=model,
-                tokenizer=processor.tokenizer,
-                feature_extractor=processor.feature_extractor,
-                torch_dtype=self.torch_dtype,
-                device=self.device,
+                "automatic-speech-recognition", 
+                model="openai/whisper-large-v3-turbo",
+                device=self.device
             )
             
             logger.info("Whisper-large-v3-turbo model loaded successfully")
             self.model_loaded = True
-            
-            # Store the processor for potential direct use
-            self.processor = processor
-            self.model = model
             
         except ImportError as e:
             logger.error(f"Could not import required dependencies: {e}")
@@ -73,7 +50,16 @@ class AudioProcessor:
             language (str): Language code (e.g., "en" for English)
             
         Returns:
-            Dict: Transcription results
+            Dict: Transcription results with format:
+            {
+                "text": "Full transcription text",
+                "language": "en",
+                "chunks": [
+                    {"timestamp": (0.0, 5.5), "text": "Text segment 1"},
+                    {"timestamp": (5.5, 10.5), "text": "Text segment 2"},
+                    ...
+                ]
+            }
         """
         logger.info(f"Transcribing audio file: {audio_path}")
         
@@ -83,55 +69,26 @@ class AudioProcessor:
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
         
         try:
-            # Try different approaches to handle different versions of the transformers library
-            
-            # Approach 1: Direct call without parameters
-            try:
-                logger.info("Attempting direct transcription without parameters")
-                result = self.pipe(str(audio_path))
-                logger.info("Direct transcription successful")
-            except Exception as e1:
-                logger.warning(f"Direct transcription failed: {e1}")
-                
-                # Approach 2: Using generate_kwargs
-                try:
-                    logger.info("Attempting transcription with generate_kwargs")
-                    result = self.pipe(
-                        str(audio_path),
-                        generate_kwargs={"task": "transcribe", "language": language if language else None}
-                    )
-                    logger.info("Transcription with generate_kwargs successful")
-                except Exception as e2:
-                    logger.warning(f"Transcription with generate_kwargs failed: {e2}")
-                    
-                    # Approach 3: Using task parameter
-                    try:
-                        logger.info("Attempting transcription with task parameter")
-                        result = self.pipe(str(audio_path), task="transcribe")
-                        logger.info("Transcription with task parameter successful")
-                    except Exception as e3:
-                        logger.error(f"All transcription approaches failed: {e1} / {e2} / {e3}")
-                        raise Exception(f"Audio transcription failed after multiple attempts")
+            # Use the pipeline with return_timestamps=True to get segment information
+            result = self.pipe(str(audio_path), return_timestamps=True)
             
             # Format result to match the expected structure
+            # The output should match the example format with "text" and "chunks"
             transcript = {
                 "text": result["text"],
-                "language": language,
-                "segments": []
+                "language": language
             }
             
-            # If chunks are available, add them as segments
+            # Add chunks if available
             if "chunks" in result:
-                for i, chunk in enumerate(result["chunks"]):
-                    segment = {
-                        "id": i,
-                        "start": chunk.get("timestamp", [0, 0])[0],
-                        "end": chunk.get("timestamp", [0, 0])[1],
-                        "text": chunk.get("text", "")
-                    }
-                    transcript["segments"].append(segment)
+                transcript["chunks"] = result["chunks"]
+            else:
+                # If no chunks are provided, create a single chunk with the full text
+                transcript["chunks"] = [
+                    {"timestamp": (0.0, 0.0), "text": result["text"]}
+                ]
             
-            logger.info(f"Transcription completed: {len(transcript['text'])} characters")
+            logger.info(f"Transcription completed: {len(transcript['text'])} characters, {len(transcript['chunks'])} chunks")
             return transcript
             
         except Exception as e:
@@ -151,4 +108,13 @@ if __name__ == "__main__":
         audio_file = sys.argv[1]
         processor = AudioProcessor()
         result = processor.transcribe_audio(audio_file)
-        print(result["text"]) 
+        
+        # Print the full text
+        print("\nFull Transcription:")
+        print(result["text"])
+        
+        # Print chunks with timestamps
+        print("\nChunks with timestamps:")
+        for chunk in result["chunks"]:
+            start, end = chunk["timestamp"]
+            print(f"[{start:.1f}s - {end:.1f}s]: {chunk['text']}") 
