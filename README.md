@@ -25,7 +25,7 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/lectura.git
+   git clone https://github.com/Amir-Mohseni/lectura.git
    cd lectura
    ```
 
@@ -53,7 +53,7 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/lectura.git
+   git clone https://github.com/Amir-Mohseni/lectura.git
    cd lectura
    ```
 
@@ -86,6 +86,34 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 4. Click "Generate Notes" and wait for the processing to complete
 
 5. View and download your generated notes in Markdown format
+
+## Project Structure
+
+```
+lectura/
+├── src/                      # Source code
+│   ├── processors/           # Input processing modules
+│   │   ├── audio_processor.py  # Audio transcription with Whisper
+│   │   ├── pdf_processor.py    # PDF processing with OlmOCR
+│   │   └── lecture_processor.py # Coordinates processing
+│   ├── generators/           # Content generation modules
+│   │   └── note_generator.py   # Notes generation with LLMs
+│   ├── tests/                # Test modules
+│   │   ├── test_audio_processor.py
+│   │   ├── test_pdf_processor.py
+│   │   ├── test_api.py
+│   │   └── test_note_generator.py
+│   ├── static/               # Static assets (CSS, JS)
+│   ├── templates/            # HTML templates
+│   └── main.py               # FastAPI application
+├── docker-compose.yml        # Docker Compose configuration
+├── docker-compose.gpu.yml    # GPU-enabled Docker configuration
+├── Dockerfile                # Docker configuration
+├── Dockerfile.gpu            # GPU-enabled Docker configuration
+├── requirements.txt          # Python dependencies
+├── .env                      # Environment variables (create this)
+└── README.md                 # This file
+```
 
 ## Advanced Configuration
 
@@ -121,6 +149,9 @@ bash make_scripts_executable.sh
 
 # Test PDF processing
 ./test_pdf.sh
+
+# Test audio processing
+./test_audio.sh
 
 # Test note generation
 ./test_notes.sh

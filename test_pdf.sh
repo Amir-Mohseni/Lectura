@@ -10,7 +10,7 @@ fi
 
 # Run the PDF processor test
 echo "Running PDF processor test..."
-python -m src.test_pdf_processor
+python -m src.tests.test_pdf_processor
 
 # Exit with the same status as the Python script
 exit $? 

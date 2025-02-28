@@ -10,7 +10,7 @@ fi
 
 # Run the audio processor test
 echo "Running audio processor test..."
-python -m src.test_audio_processor
+python -m src.tests.test_audio_processor
 
 # Exit with the same status as the Python script
 exit $? 

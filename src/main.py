@@ -1,19 +1,23 @@
 import argparse
 from pathlib import Path
-from src.lecture_processor import LectureProcessor
-from src.note_generator import NoteGenerator
 import os
 import json
 import logging
 import sys
+import tempfile
+import shutil
+from typing import Optional
+
 from fastapi import FastAPI, Request, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import tempfile
-import shutil
-from typing import Optional
+
+# Import from reorganized modules
+from src.processors.lecture_processor import LectureProcessor
+from src.processors.audio_processor import AudioProcessor
+from src.generators.note_generator import NoteGenerator
 
 # Configure logging
 logging.basicConfig(
@@ -61,8 +65,6 @@ async def read_root(request: Request):
 def transcribe_audio(audio_path, language="en"):
     """Transcribe audio file using Whisper-large-v3-turbo model"""
     logger.info(f"Transcribing audio file: {audio_path}")
-    from src.audio_processor import AudioProcessor
-    
     processor = AudioProcessor()
     transcript = processor.transcribe_audio(audio_path, language)
     return transcript

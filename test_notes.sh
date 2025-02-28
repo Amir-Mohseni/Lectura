@@ -8,9 +8,9 @@ else
     echo "No .env file found. Make sure environment variables are set."
 fi
 
-# Run the test
+# Run the note generator test
 echo "Running note generator test..."
-python -m src.test_note_generator
+python -m src.tests.test_note_generator
 
 # Exit with the same status as the Python script
 exit $? 
