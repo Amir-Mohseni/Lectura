@@ -3,6 +3,7 @@ import sys
 import logging
 import tempfile
 import urllib.request
+import subprocess
 from pathlib import Path
 
 # Configure logging
@@ -13,9 +14,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger("test_pdf_processor")
 
+def check_poppler_installed():
+    """Check if poppler-utils is installed"""
+    try:
+        subprocess.run(['pdfinfo', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        return True
+    except FileNotFoundError:
+        return False
+
 def test_pdf_processing():
     """Test PDF processing with OlmOCR"""
     try:
+        # Check if poppler-utils is installed
+        if not check_poppler_installed():
+            logger.warning("poppler-utils is not installed. This is required for OlmOCR PDF processing.")
+            logger.warning("Install with: apt-get install poppler-utils (Ubuntu/Debian) or brew install poppler (macOS)")
+            logger.warning("The test will continue but will use basic PDF extraction instead of OlmOCR.")
+        
         # Import the PDFProcessor
         from src.processors.pdf_processor import PDFProcessor
         

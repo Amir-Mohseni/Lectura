@@ -118,6 +118,18 @@ class PDFProcessor:
         slides = []
         doc = fitz.open(pdf_path)
         
+        # Check if poppler-utils is installed
+        import subprocess
+        try:
+            subprocess.run(['pdfinfo', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            poppler_installed = True
+        except FileNotFoundError:
+            logger.warning("poppler-utils not found. This is required for OlmOCR PDF processing.")
+            logger.warning("Install with: apt-get install poppler-utils (Ubuntu/Debian) or brew install poppler (macOS)")
+            logger.warning("Falling back to basic PDF extraction")
+            poppler_installed = False
+            return self._process_with_basic_extraction(pdf_path)
+        
         for page_num in range(len(doc)):
             logger.info(f"Processing page {page_num+1} with OlmOCR")
             
@@ -187,6 +199,25 @@ class PDFProcessor:
                     "timestamp": None  # We don't have timestamp info from PDF
                 })
                 
+            except FileNotFoundError as e:
+                if 'pdfinfo' in str(e):
+                    logger.error(f"Error: poppler-utils not installed. Install with: apt-get install poppler-utils")
+                    # Fall back to basic extraction for this and all remaining pages
+                    remaining_slides = self._process_with_basic_extraction(pdf_path)
+                    # Only keep slides for pages we haven't processed yet
+                    remaining_slides = [s for s in remaining_slides if s["slide_number"] > page_num]
+                    slides.extend(remaining_slides)
+                    break
+                else:
+                    logger.error(f"Error processing page {page_num+1}: {e}", exc_info=True)
+                    # Add basic text as fallback for this page
+                    page = doc[page_num]
+                    text = page.get_text()
+                    slides.append({
+                        "slide_number": page_num + 1,
+                        "content": text,
+                        "timestamp": None
+                    })
             except Exception as e:
                 logger.error(f"Error processing page {page_num+1}: {e}", exc_info=True)
                 # Add basic text as fallback

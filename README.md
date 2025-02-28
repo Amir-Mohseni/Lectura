@@ -18,6 +18,10 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 - 8GB+ RAM (16GB+ recommended)
 - NVIDIA GPU with 8GB+ VRAM (optional, for GPU acceleration)
 - NVIDIA Container Toolkit (for Docker GPU support)
+- System dependencies:
+  - ffmpeg (for audio processing)
+  - poppler-utils (for PDF processing)
+  - build-essential (for compiling dependencies)
 
 ## Installation
 
@@ -57,20 +61,33 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
    cd lectura
    ```
 
-2. Create a virtual environment:
+2. Install system dependencies:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get update && sudo apt-get install -y ffmpeg build-essential poppler-utils
+   
+   # macOS
+   brew install ffmpeg poppler
+   
+   # Windows
+   # Install ffmpeg from https://ffmpeg.org/download.html
+   # Install poppler from https://github.com/oschwartz10612/poppler-windows/releases
+   ```
+
+3. Create a virtual environment:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies:
+4. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. Create a `.env` file with your API credentials (as shown above)
+5. Create a `.env` file with your API credentials (as shown above)
 
-5. Run the application:
+6. Run the application:
    ```bash
    uvicorn src.main:app --host 0.0.0.0 --port 8000
    ```
@@ -248,6 +265,23 @@ Lectura consists of several components:
    - Verify your API key is correct
    - Check your internet connection
    - Ensure the model you're using is available in the Hugging Face API
+
+4. **PDF Processing Errors**: If you see `FileNotFoundError: [Errno 2] No such file or directory: 'pdfinfo'`:
+   - This means the `poppler-utils` package is missing
+   - Install it with:
+     ```bash
+     # Ubuntu/Debian
+     sudo apt-get install poppler-utils
+     
+     # macOS
+     brew install poppler
+     
+     # Windows
+     # Download from https://github.com/oschwartz10612/poppler-windows/releases
+     # and add the bin directory to your PATH
+     ```
+   - In Docker, rebuild your image after updating the Dockerfile
+   - In Colab, run: `!apt-get update && apt-get install -y poppler-utils`
 
 ## License
 
