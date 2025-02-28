@@ -75,6 +75,70 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
    uvicorn src.main:app --host 0.0.0.0 --port 8000
    ```
 
+### Option 3: Running in Google Colab
+
+You can run Lectura directly in Google Colab, which provides free GPU access:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Amir-Mohseni/lectura/blob/main/lectura_colab.ipynb)
+
+1. Click the "Open in Colab" button above to open the ready-to-use notebook
+
+2. Enable GPU acceleration:
+   - Click on "Runtime" > "Change runtime type"
+   - Select "GPU" from the Hardware accelerator dropdown
+   - Click "Save"
+
+3. Follow the step-by-step instructions in the notebook to:
+   - Install dependencies
+   - Set up your API credentials
+   - Start the application with a public URL
+   - Process lecture recordings and slides
+
+This is the easiest way to try Lectura without any local installation.
+
+Alternatively, you can manually set up Colab:
+
+1. Create a new Colab notebook at [colab.research.google.com](https://colab.research.google.com)
+
+2. Enable GPU acceleration as described above
+
+3. Clone the repository and install dependencies:
+   ```python
+   !git clone https://github.com/Amir-Mohseni/lectura.git
+   %cd lectura
+   !pip install -r requirements.txt
+   ```
+
+4. Create a `.env` file with your API credentials:
+   ```python
+   %%writefile .env
+   API_BASE_URL="https://router.huggingface.co/hf-inference/v1"
+   API_KEY=your_huggingface_api_key
+   API_MODEL=meta-llama/Llama-3.2-3B-Instruct
+   PORT=8000
+   DEBUG=False
+   ```
+
+5. Run the application with ngrok for public access:
+   ```python
+   !pip install pyngrok
+   from pyngrok import ngrok
+   
+   # Start the FastAPI app in the background
+   !nohup uvicorn src.main:app --host 0.0.0.0 --port 8000 &
+   
+   # Create a tunnel to the app
+   public_url = ngrok.connect(8000)
+   print(f"Lectura is now available at: {public_url}")
+   ```
+
+6. Access the application using the ngrok URL provided
+
+7. When you're done, stop the ngrok tunnel:
+   ```python
+   ngrok.kill()
+   ```
+
 ## Usage
 
 1. Open your browser and navigate to `http://localhost:8000`
