@@ -45,16 +45,28 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
    DEBUG=False
    ```
 
-3. Make the run script executable:
-   ```bash
-   chmod +x run_with_gpu.sh
-   ```
+3. Build and run with Docker:
 
-4. Run the application:
+   **Option A: Using the rebuild script (recommended)**
    ```bash
-   ./run_with_gpu.sh
+   # Make the script executable
+   chmod +x rebuild_docker.sh
+   
+   # Build and run
+   ./rebuild_docker.sh
    ```
    This script will automatically detect if you have a GPU and use the appropriate Docker configuration.
+
+   **Option B: Manual Docker commands**
+   ```bash
+   # For systems with NVIDIA GPU:
+   docker-compose -f docker-compose.gpu.yml up --build
+   
+   # For systems without GPU:
+   docker-compose up --build
+   ```
+
+4. Access the application at http://localhost:8000
 
 ### Option 2: Manual Installation
 
@@ -67,7 +79,7 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 2. Install system dependencies:
    ```bash
    # Ubuntu/Debian
-   sudo apt-get update && sudo apt-get install -y ffmpeg build-essential poppler-utils
+   sudo apt-get update && sudo apt-get install -y ffmpeg build-essential poppler-utils libffi-dev libssl-dev
    
    # macOS
    brew install ffmpeg poppler
@@ -85,6 +97,10 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 4. Install dependencies:
    ```bash
+   # Install PyMuPDF separately to avoid build issues
+   pip install pymupdf==1.23.7
+   
+   # Install the rest of the dependencies
    pip install -r requirements.txt
    ```
 
@@ -92,7 +108,7 @@ Lectura is an advanced tool that automatically generates comprehensive, well-str
 
 6. Run the application:
    ```bash
-   uvicorn src.main:app --host 0.0.0.0 --port 8000
+   uvicorn src.app:app --host 0.0.0.0 --port 8000
    ```
 
 ### Option 3: Running in Google Colab
@@ -178,20 +194,16 @@ lectura/
 ├── src/                      # Source code
 │   ├── processors/           # Input processing modules
 │   │   ├── audio_processor.py  # Audio transcription with Whisper-large-v3-turbo
-│   │   └── lecture_processor.py # Coordinates processing and PDF extraction
-│   ├── generators/           # Content generation modules
-│   │   └── note_generator.py   # Notes generation with LLMs
-│   ├── tests/                # Test modules
-│   │   ├── test_audio_processor.py
-│   │   ├── test_api.py
-│   │   └── test_note_generator.py
+│   │   ├── pdf_processor.py    # PDF processing with OlmOCR
+│   │   └── lecture_processor.py # Coordinates processing and note generation
 │   ├── static/               # Static assets (CSS, JS)
 │   ├── templates/            # HTML templates
-│   └── main.py               # FastAPI application
+│   └── app.py                # FastAPI application
 ├── docker-compose.yml        # Docker Compose configuration
 ├── docker-compose.gpu.yml    # GPU-enabled Docker configuration
 ├── Dockerfile                # Docker configuration
 ├── Dockerfile.gpu            # GPU-enabled Docker configuration
+├── rebuild_docker.sh         # Script to rebuild Docker containers
 ├── requirements.txt          # Python dependencies
 ├── .env                      # Environment variables (create this)
 └── README.md                 # This file
@@ -206,10 +218,30 @@ For GPU acceleration, ensure you have:
 - NVIDIA drivers installed
 - NVIDIA Container Toolkit (for Docker)
 
-The application will automatically detect and use your GPU if available. For Docker, use:
+The application will automatically detect and use your GPU if available. 
+
+**Using GPU with Docker:**
 ```bash
-docker-compose -f docker-compose.gpu.yml up --build
+# Build with no cache (recommended for first run or after updates)
+docker-compose -f docker-compose.gpu.yml build --no-cache
+
+# Run with GPU support
+docker-compose -f docker-compose.gpu.yml up
 ```
+
+**Troubleshooting Docker Builds:**
+
+If you encounter issues with Docker builds, especially related to PyMuPDF or other dependencies:
+
+1. Use the rebuild script to clean and rebuild:
+   ```bash
+   ./rebuild_docker.sh
+   ```
+
+2. This script will:
+   - Detect if you have a GPU
+   - Rebuild the Docker image with `--no-cache` to ensure all dependencies are properly installed
+   - Use the appropriate Docker configuration based on your hardware
 
 ### API Configuration
 
@@ -261,12 +293,18 @@ Lectura consists of several components:
    - Ensure you have the latest pip: `pip install --upgrade pip`
    - Install system dependencies: `apt-get install ffmpeg git poppler-utils`
 
-3. **API Errors**: If you encounter API errors:
+3. **Docker Build Errors**: If you encounter errors during Docker build:
+   - Use the rebuild script: `./rebuild_docker.sh`
+   - This script rebuilds with `--no-cache` to ensure clean installation
+   - For PyMuPDF specific errors, the Dockerfile now installs a specific version (1.23.7) to avoid build issues
+   - If you're on ARM architecture (Apple M1/M2), PyMuPDF build issues are common and should be resolved by our Dockerfile
+
+4. **API Errors**: If you encounter API errors:
    - Verify your API key is correct
    - Check your internet connection
    - Ensure the model you're using is available in the Hugging Face API
 
-4. **PDF Processing Errors**: If you see `FileNotFoundError: [Errno 2] No such file or directory: 'pdfinfo'`:
+5. **PDF Processing Errors**: If you see `FileNotFoundError: [Errno 2] No such file or directory: 'pdfinfo'`:
    - This means the `poppler-utils` package is missing
    - Install it with:
      ```bash

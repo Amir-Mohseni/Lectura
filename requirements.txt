@@ -16,7 +16,8 @@ numpy
 scipy
 python-multipart
 markdown
-pymupdf
+# pymupdf is installed separately in the Dockerfile
+# pymupdf
 ffmpeg-python
 pydub
 python-dotenv

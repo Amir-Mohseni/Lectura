@@ -8,13 +8,10 @@ services:
     volumes:
       - .:/app
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - PYTHONPATH=/app
       - API_BASE_URL=${API_BASE_URL}
       - API_KEY=${API_KEY}
       - API_MODEL=${API_MODEL}
-      - WHISPER_MODEL=${WHISPER_MODEL}
       - PORT=${PORT}
       - DEBUG=${DEBUG}
-    command: uvicorn src.main:app --host 0.0.0.0 --reload
+    command: uvicorn src.app:app --host 0.0.0.0 --reload
     restart: unless-stopped 
