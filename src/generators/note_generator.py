@@ -1,6 +1,9 @@
 import os
 import openai
 import logging
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 logger = logging.getLogger("lectura.generators.note")
 
@@ -8,7 +11,7 @@ class NoteGenerator:
     def __init__(self, api_key=None, model=None, base_url=None):
         # Use provided values or fall back to environment variables
         self.api_key = api_key or os.getenv("API_KEY")
-        self.model = model or os.getenv("API_MODEL", "meta-llama/Llama-3.2-3B-Instruct")
+        self.model = model or os.getenv("API_MODEL")
         self.base_url = base_url or os.getenv("API_BASE_URL")
         
         if not self.api_key:
@@ -69,8 +72,7 @@ class NoteGenerator:
                     {"role": "system", "content": "You are an expert note-taking assistant."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,
-                max_tokens=2000
+                temperature=0.5,
             )
             
             # Extract and return the generated notes

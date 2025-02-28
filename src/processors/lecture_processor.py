@@ -1,18 +1,29 @@
 from typing import Optional, List, Dict
 import logging
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 logger = logging.getLogger("lectura.processors.lecture")
 
 class LectureProcessor:
-    def __init__(self):
+    def __init__(self, use_mock=False):
         """Initialize the lecture processor.
         
-        Note: We now use Whisper-large-v3-turbo exclusively via the AudioProcessor
+        Args:
+            use_mock (bool): Whether to use the mock audio processor for testing
         """
         logger.info("Initializing LectureProcessor")
         self.transcript = None
         self.slides = None
+        self.use_mock = use_mock
+        
+        # Check if we should use mock processor based on environment variable
+        if os.getenv("USE_MOCK_PROCESSOR", "").lower() in ("true", "1", "yes"):
+            logger.info("Using mock processor based on environment variable")
+            self.use_mock = True
     
     def process_audio(self, audio_path: str) -> Dict:
         """Process lecture audio and return transcription.
@@ -25,9 +36,17 @@ class LectureProcessor:
         """
         logger.info(f"Processing audio file: {audio_path}")
         
-        # Use the AudioProcessor instead
-        from src.processors.audio_processor import AudioProcessor
-        processor = AudioProcessor()
+        if self.use_mock:
+            # Use the MockAudioProcessor for testing
+            logger.info("Using MockAudioProcessor for testing")
+            from src.processors.mock_audio_processor import MockAudioProcessor
+            processor = MockAudioProcessor()
+        else:
+            # Use the real AudioProcessor
+            logger.info("Using real AudioProcessor")
+            from src.processors.audio_processor import AudioProcessor
+            processor = AudioProcessor()
+            
         transcript = processor.transcribe_audio(audio_path)
         self.transcript = transcript
         return transcript

@@ -14,14 +14,13 @@ class AudioProcessor:
         
         try:
             # Initialize the model using pipeline directly
-            logger.info("Loading Whisper-large-v3-turbo model...")
+            logger.info("Loading Whisper model...")
             self.pipe = pipeline(
                 "automatic-speech-recognition", 
-                model="openai/whisper-large-v3-turbo",
-                device="auto"
+                model="distil-whisper/distil-large-v3",
             )
             
-            logger.info("Whisper-large-v3-turbo model loaded successfully")
+            logger.info("Whisper model loaded successfully")
             self.model_loaded = True
             
         except ImportError as e:
@@ -32,7 +31,7 @@ class AudioProcessor:
             raise Exception(f"Failed to initialize Whisper model: {e}")
     
     def transcribe_audio(self, audio_path: str, language: str = "en") -> Dict[str, Any]:
-        """Transcribe audio file using Whisper-large-v3-turbo model
+        """Transcribe audio file using Whisper model
         
         Args:
             audio_path (str): Path to the audio file

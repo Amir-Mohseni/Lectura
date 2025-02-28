@@ -204,9 +204,9 @@ document.addEventListener('DOMContentLoaded', function() {
         lectureForm.onsubmit = function(e) {
             e.preventDefault();
             
-            // Validate form
-            if (!audioFile.files.length) {
-                alert('Please select an audio file');
+            // Validate form - require at least one file (audio or slides)
+            if (!audioFile.files.length && !slidesFile.files.length) {
+                alert('Please select at least one file (audio or slides)');
                 return false;
             }
 
@@ -234,11 +234,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add OpenAI model and base URL from settings
             const modelName = settings.modelType === 'custom' ? settings.customModel : settings.modelType;
             formData.append('model', modelName);
-            formData.append('base_url', settings.baseUrl || '');
+            formData.append('language', 'en');  // Default to English
             
             console.log('Submitting form with:');
             console.log('- OpenAI model:', modelName);
-            console.log('- Base URL:', settings.baseUrl || 'Default');
+            console.log('- Language:', 'en');
             
             // Send form data to server
             const xhr = new XMLHttpRequest();
@@ -261,14 +261,84 @@ document.addEventListener('DOMContentLoaded', function() {
                         const response = JSON.parse(xhr.responseText);
                         console.log('Response:', response);
                         
-                        if (response.status === 'success') {
-                            // Show result container
-                            if (resultContainer) {
-                                resultContainer.style.display = 'block';
-                            }
+                        // Show result container
+                        if (resultContainer) {
+                            resultContainer.style.display = 'block';
                             
-                            // Display result links
-                            if (resultLinks) {
+                            // Check if we have notes in the response
+                            if (response.notes) {
+                                // Create a div for the markdown content
+                                const notesDiv = document.createElement('div');
+                                notesDiv.className = 'markdown-body';
+                                notesDiv.innerHTML = marked.parse(response.notes);
+                                
+                                // Clear previous content and add the new notes
+                                resultLinks.innerHTML = '';
+                                resultLinks.appendChild(notesDiv);
+                                
+                                // Add a download button for the markdown
+                                const downloadBtn = document.createElement('button');
+                                downloadBtn.className = 'download-button';
+                                downloadBtn.innerHTML = '<span class="icon">📥</span> Download Notes';
+                                downloadBtn.onclick = function() {
+                                    // Create a blob with the markdown content
+                                    const blob = new Blob([response.notes], {type: 'text/markdown'});
+                                    const url = URL.createObjectURL(blob);
+                                    
+                                    // Create a temporary link and trigger download
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = 'lecture_notes.md';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                };
+                                
+                                resultLinks.appendChild(downloadBtn);
+                                
+                                // Show success message
+                                setTimeout(() => {
+                                    alert('Notes generated successfully!');
+                                }, 500);
+                            } else if (response.markdown_notes) {
+                                // Handle legacy format (from /process endpoint)
+                                // Create a div for the markdown content
+                                const notesDiv = document.createElement('div');
+                                notesDiv.className = 'markdown-body';
+                                notesDiv.innerHTML = marked.parse(response.markdown_notes);
+                                
+                                // Clear previous content and add the new notes
+                                resultLinks.innerHTML = '';
+                                resultLinks.appendChild(notesDiv);
+                                
+                                // Add a download button for the markdown
+                                const downloadBtn = document.createElement('button');
+                                downloadBtn.className = 'download-button';
+                                downloadBtn.innerHTML = '<span class="icon">📥</span> Download Notes';
+                                downloadBtn.onclick = function() {
+                                    // Create a blob with the markdown content
+                                    const blob = new Blob([response.markdown_notes], {type: 'text/markdown'});
+                                    const url = URL.createObjectURL(blob);
+                                    
+                                    // Create a temporary link and trigger download
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = 'lecture_notes.md';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                };
+                                
+                                resultLinks.appendChild(downloadBtn);
+                                
+                                // Show success message
+                                setTimeout(() => {
+                                    alert('Notes generated successfully!');
+                                }, 500);
+                            } else if (response.status === 'success') {
+                                // Legacy format handling
                                 resultLinks.innerHTML = '';
                                 
                                 if (response.files) {
@@ -289,11 +359,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                         resultLinks.appendChild(linkContainer);
                                     }
                                 }
+                            } else {
+                                showErrorMessage('Failed to generate notes', 'No notes found in the response');
                             }
-                            
-                            alert('Notes generated successfully!');
-                        } else {
-                            showErrorMessage('Failed to generate notes', response.message, response.traceback);
                         }
                     } catch (error) {
                         console.error('Error parsing response:', error);

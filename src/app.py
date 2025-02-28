@@ -6,9 +6,24 @@ from pathlib import Path
 import shutil
 import os
 import uuid
+import logging
 from src.processors.lecture_processor import LectureProcessor
 from src.generators.note_generator import NoteGenerator
 from fastapi import Request
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("lectura.app")
+
+# Check if we should use mock processor for testing
+USE_MOCK = os.getenv("USE_MOCK_PROCESSOR", "").lower() in ("true", "1", "yes")
+if USE_MOCK:
+    logger.info("Using mock processor for testing")
+else:
+    logger.info("Using real processor")
 
 app = FastAPI(title="Lectura")
 
@@ -28,8 +43,8 @@ async def home(request: Request):
 
 @app.post("/process")
 async def process_lecture(
-    audio: UploadFile = File(...),
-    slides: UploadFile = None,
+    audio: UploadFile = File(None),
+    slides: UploadFile = File(None),
     api_base_url: str = Form(None),
     api_key: str = Form(None),
     api_model: str = Form(None)
@@ -39,43 +54,69 @@ async def process_lecture(
     session_dir = UPLOAD_DIR / session_id
     session_dir.mkdir()
     
+    logger.info(f"Processing lecture with session ID: {session_id}")
+    
+    # Check if at least one file is provided
+    if not audio and not slides:
+        raise HTTPException(status_code=400, detail="You must provide either an audio file or slides")
+    
+    if audio:
+        logger.info(f"Audio file: {audio.filename}, Content-Type: {audio.content_type}")
+    if slides:
+        logger.info(f"Slides file: {slides.filename}, Content-Type: {slides.content_type}")
+    
     try:
-        # Save audio file
-        audio_path = session_dir / audio.filename
-        with audio_path.open("wb") as f:
-            shutil.copyfileobj(audio.file, f)
+        # Initialize variables
+        transcript = ""
+        slides_data = []
+        processor = LectureProcessor(use_mock=USE_MOCK)
+        
+        # Process audio if provided
+        if audio:
+            audio_path = session_dir / audio.filename
+            logger.info(f"Saving audio file to: {audio_path}")
+            with audio_path.open("wb") as f:
+                shutil.copyfileobj(audio.file, f)
+            logger.info(f"Audio file saved successfully")
             
-        # Process audio
-        processor = LectureProcessor()
-        transcript = processor.process_audio(str(audio_path))
+            # Process audio
+            logger.info(f"Processing audio file...")
+            transcript = processor.process_audio(str(audio_path))
+            logger.info(f"Audio processing completed")
         
         # Process slides if provided
-        slides_data = []
         if slides:
+            logger.info(f"Processing slides file...")
             slides_path = session_dir / slides.filename
             with slides_path.open("wb") as f:
                 shutil.copyfileobj(slides.file, f)
             slides_data = processor.extract_slides_from_pdf(str(slides_path))
+            logger.info(f"Slides processing completed: {len(slides_data)} slides extracted")
         
         # Use provided API settings or fall back to environment variables
+        logger.info(f"Generating notes...")
         note_generator = NoteGenerator(
-            api_key=api_key or os.getenv("API_KEY"),
-            base_url=api_base_url or os.getenv("API_BASE_URL"),
-            model=api_model or os.getenv("API_MODEL")
+            api_key=os.getenv("API_KEY"),
+            base_url=os.getenv("API_BASE_URL"),
+            model=os.getenv("API_MODEL")
         )
         notes = note_generator.generate_notes(transcript, slides_data)
+        logger.info(f"Notes generation completed: {len(notes)} characters")
         
-        # Save results
-        results = {
-            "notes": notes,
-            "transcript": transcript,
-            "slides": slides_data
-        }
-        
-        return JSONResponse(content=results)
+        # Return the markdown notes as the primary content with additional data in the response
+        logger.info(f"Returning response")
+        return JSONResponse(content={
+            "markdown_notes": notes,  # Primary content - the markdown notes
+            "data": {  # Additional data in a nested structure
+                "transcript": transcript,
+                "slides": slides_data
+            }
+        })
         
     except Exception as e:
+        logger.error(f"Error processing lecture: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         # Cleanup
+        logger.info(f"Cleaning up session directory: {session_dir}")
         shutil.rmtree(session_dir) 

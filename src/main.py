@@ -101,27 +101,41 @@ def generate_notes_from_transcript_and_slides(transcript, slides_path, model="gp
 
 @app.post("/generate")
 async def generate_notes(
-    recording: UploadFile,
+    recording: Optional[UploadFile] = File(None),
     slides: Optional[UploadFile] = None,
-    language: str = "en",
-    model: str = "gpt-4o",
+    language: str = Form("en"),
+    model: str = Form("gpt-4o"),
 ):
+    # Check if at least one file is provided
+    if not recording and not slides:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "You must provide either a recording or slides"}
+        )
+    
     # Create a temporary directory for processing
     temp_dir = tempfile.mkdtemp()
     
-    # Determine file extension from the uploaded file
-    file_extension = os.path.splitext(recording.filename)[1].lower() if recording.filename else ".mp3"
-    if not file_extension:
-        file_extension = ".mp3"  # Default to mp3 if no extension
-    
-    # Save the recording with proper extension
-    recording_path = os.path.join(temp_dir, f"recording{file_extension}")
-    logger.info(f"Saving uploaded audio to {recording_path}")
-    
     try:
-        # Save the recording
-        with open(recording_path, "wb") as buffer:
-            buffer.write(await recording.read())
+        # Process recording if provided
+        transcript = ""
+        recording_path = None
+        if recording:
+            # Determine file extension from the uploaded file
+            file_extension = os.path.splitext(recording.filename)[1].lower() if recording.filename else ".mp3"
+            if not file_extension:
+                file_extension = ".mp3"  # Default to mp3 if no extension
+            
+            # Save the recording with proper extension
+            recording_path = os.path.join(temp_dir, f"recording{file_extension}")
+            logger.info(f"Saving uploaded audio to {recording_path}")
+            
+            # Save the recording
+            with open(recording_path, "wb") as buffer:
+                buffer.write(await recording.read())
+            
+            # Process the recording
+            transcript = transcribe_audio(recording_path, language)
         
         # Save the slides if provided
         slides_path = None
@@ -130,14 +144,26 @@ async def generate_notes(
             with open(slides_path, "wb") as buffer:
                 buffer.write(await slides.read())
         
-        # Process the recording
-        transcript = transcribe_audio(recording_path, language)
-        
         # Generate notes using the transcript and slides if available
-        if slides_path:
+        if slides_path and transcript:
             notes = generate_notes_from_transcript_and_slides(transcript, slides_path, model)
-        else:
+        elif transcript:
             notes = generate_notes_from_transcript(transcript, model)
+        elif slides_path:
+            # If only slides are provided, extract text from slides and generate notes
+            processor = LectureProcessor()
+            slides_data = processor.extract_slides_from_pdf(slides_path)
+            note_generator = NoteGenerator(
+                api_key=os.getenv("API_KEY"),
+                model=os.getenv("API_MODEL", model),
+                base_url=os.getenv("API_BASE_URL")
+            )
+            notes = note_generator.generate_notes("", slides_data)
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "No valid content to process"}
+            )
         
         # Clean up temporary files
         shutil.rmtree(temp_dir)
