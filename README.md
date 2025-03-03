@@ -1,4 +1,4 @@
-# Lectura - AI-Powered Lecture Notes Generator
+# Lectura - AI-Powered Lecture Notes
 
 Lectura is a streamlined tool that automatically generates comprehensive, well-structured notes from lecture recordings and slides using local AI models.
 
