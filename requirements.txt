@@ -1,25 +1,28 @@
-fastapi
-uvicorn
-jinja2
-openai
-# Hugging Face dependencies for Whisper-large-v3-turbo
-transformers>=4.36.0
-datasets
-accelerate
-safetensors
-sentencepiece
-# Additional dependencies for audio processing
-Pillow
-# Remove original whisper as we're using the Hugging Face version
-# whisper
-numpy
-scipy
-python-multipart
-markdown
-# pymupdf is installed separately in the Dockerfile
-# pymupdf
-ffmpeg-python
-pydub
-python-dotenv
-# OlmOCR dependencies
-git+https://github.com/allenai/olmocr.git
+# Core dependencies
+transformers>=4.30.0
+torch>=2.0.0
+sentencepiece>=0.1.99
+requests>=2.28.0
+
+# Audio processing
+# Using distil-whisper instead of openai-whisper
+accelerate>=0.20.0
+datasets>=2.12.0
+librosa>=0.10.0
+
+# PDF processing (mock implementation)
+# PyMuPDF and pdf2image are not needed anymore
+
+# PPT processing (mock implementation)
+# python-pptx is not needed anymore
+
+# Utilities
+tqdm>=4.65.0
+numpy>=1.24.0 
+mlx-whisper>=0.1.0
+
+# LLM API clients
+openai>=1.2.0  # For OpenAI API
+anthropic>=0.5.0  # For Anthropic API
+
+python-dotenv>=1.0.0

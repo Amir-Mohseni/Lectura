@@ -20,11 +20,11 @@
         </header>
 
         <main>
-            <form id="lectureForm" enctype="multipart/form-data">
+            <form id="lectureForm" action="/process" method="post" enctype="multipart/form-data">
                 <div class="upload-section">
                     <h2><span class="icon">🎤</span> Lecture Audio File:</h2>
                     <div class="upload-box" id="audioUpload">
-                        <input type="file" name="recording" id="audioFile" accept="audio/*,.mp3,.wav,.m4a,.ogg" hidden>
+                        <input type="file" name="audio" id="audioFile" accept="audio/*,.mp3,.wav,.m4a,.ogg" hidden>
                         <div class="upload-content">
                             <div class="cloud-icon">☁️</div>
                             <p>Choose file or drag here</p>

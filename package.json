@@ -1,0 +1,29 @@
+{
+  "name": "lectura",
+  "version": "1.0.0",
+  "description": "AI-Powered Lecture Notes Generator",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "setup": "npm install && pip install -r requirements.txt",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=7.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+} 

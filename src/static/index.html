@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lectura - AI-Powered Lecture Notes Generator</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+</head>
+<body class="light-mode">
+    <div class="container">
+        <header>
+            <div class="logo">
+                <img src="images/logo.svg" alt="Lectura Logo">
+                <h1>Lectura</h1>
+            </div>
+            <div class="theme-toggle">
+                <button id="theme-toggle-btn" aria-label="Toggle dark/light mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="settings-btn" aria-label="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <section class="upload-section">
+                <h2>Upload Your Lecture Materials</h2>
+                <div class="upload-container">
+                    <div class="upload-area" id="audio-upload-area">
+                        <i class="fas fa-microphone upload-icon"></i>
+                        <h3>Lecture Audio</h3>
+                        <p>Drop your audio file or click to browse</p>
+                        <p class="file-types">Supports MP3, WAV, M4A, OGG</p>
+                        <input type="file" id="audio-upload" accept=".mp3,.wav,.m4a,.ogg" hidden>
+                    </div>
+                    <div class="upload-area" id="slides-upload-area">
+                        <i class="fas fa-file-pdf upload-icon"></i>
+                        <h3>Lecture Slides (Optional)</h3>
+                        <p>Drop your slides or click to browse</p>
+                        <p class="file-types">Supports PDF, PPT, PPTX</p>
+                        <input type="file" id="slides-upload" accept=".pdf,.ppt,.pptx" hidden>
+                        <div class="coming-soon-badge">Coming Soon</div>
+                    </div>
+                </div>
+                <div class="selected-files">
+                    <div id="audio-file-info" class="file-info hidden">
+                        <i class="fas fa-file-audio"></i>
+                        <span class="file-name">No file selected</span>
+                        <button class="remove-file-btn" data-target="audio-upload">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="slides-file-info" class="file-info hidden">
+                        <i class="fas fa-file-pdf"></i>
+                        <span class="file-name">No file selected</span>
+                        <button class="remove-file-btn" data-target="slides-upload">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="generate-btn" class="primary-btn" disabled>
+                        <i class="fas fa-magic"></i> Generate Notes
+                    </button>
+                </div>
+            </section>
+
+            <section class="processing-section hidden">
+                <div class="progress-container">
+                    <h3 id="processing-status">Processing your lecture...</h3>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <div class="processing-steps">
+                        <div class="step active" id="step-upload">
+                            <i class="fas fa-upload"></i>
+                            <span>Uploading</span>
+                        </div>
+                        <div class="step" id="step-transcribe">
+                            <i class="fas fa-headphones"></i>
+                            <span>Transcribing</span>
+                        </div>
+                        <div class="step" id="step-generate">
+                            <i class="fas fa-pen-fancy"></i>
+                            <span>Generating Notes</span>
+                        </div>
+                        <div class="step" id="step-complete">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Complete</span>
+                        </div>
+                    </div>
+                    <button id="cancel-btn" class="secondary-btn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </section>
+
+            <section class="results-section hidden">
+                <div class="results-header">
+                    <h2>Generated Notes</h2>
+                    <div class="results-actions">
+                        <button id="copy-btn" class="icon-btn" title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button id="download-btn" class="icon-btn" title="Download as Markdown">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button id="new-upload-btn" class="secondary-btn">
+                            <i class="fas fa-plus"></i> New Upload
+                        </button>
+                    </div>
+                </div>
+                <div class="results-content">
+                    <div id="notes-preview" class="markdown-preview"></div>
+                </div>
+            </section>
+        </main>
+
+        <div id="settings-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button id="close-settings-btn" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-group">
+                        <h3>Appearance</h3>
+                        <div class="setting-item">
+                            <label for="theme-select">Theme</label>
+                            <select id="theme-select" class="setting-control">
+                                <option value="system">System Default</option>
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <h3>Notes Generation</h3>
+                        <div class="setting-item">
+                            <label for="api-provider">API Provider</label>
+                            <select id="api-provider" class="setting-control">
+                                <option value="default">Default (.env config)</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="local">Local Model</option>
+                                <option value="ollama">Ollama</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom API provider settings -->
+                        <div id="custom-api-settings" class="nested-settings hidden">
+                            <div class="setting-item">
+                                <label for="api-endpoint">API Endpoint URL</label>
+                                <input type="text" id="api-endpoint" class="setting-control" 
+                                       placeholder="https://api.example.com/v1">
+                            </div>
+                            <div class="setting-item">
+                                <label for="api-model-name">Model Name</label>
+                                <input type="text" id="api-model-name" class="setting-control" 
+                                       placeholder="model-name">
+                            </div>
+                            <div class="setting-item">
+                                <label for="api-key">API Key</label>
+                                <input type="password" id="api-key" class="setting-control" 
+                                       placeholder="Your API key">
+                            </div>
+                        </div>
+
+                        <!-- Standard model selection, only shown for non-custom providers -->
+                        <div id="standard-model-settings" class="setting-item">
+                            <label for="model-select">Model</label>
+                            <select id="model-select" class="setting-control">
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="claude-3-opus">Claude 3 Opus</option>
+                                <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                                <option value="mixtral-8x7b">Mixtral 8x7B</option>
+                                <option value="llama-3-70b">Llama 3 70B</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <h3>Transcription</h3>
+                        <div class="setting-item">
+                            <label for="whisper-model">Whisper Model</label>
+                            <select id="whisper-model" class="setting-control">
+                                <option value="default">Default (No model specified)</option>
+                                <option value="mlx-community/whisper-large-v3-turbo">Whisper Large V3 Turbo</option>
+                                <option value="mlx-community/whisper-large-v3">Whisper Large V3</option>
+                                <option value="mlx-community/whisper-medium">Whisper Medium</option>
+                                <option value="mlx-community/whisper-small">Whisper Small</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-settings-btn" class="primary-btn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Lectura. All rights reserved.</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html> 

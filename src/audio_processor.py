@@ -1,95 +1,55 @@
-import logging
-import os
-from pathlib import Path
-from typing import Dict, Any
-from transformers import pipeline
+import mlx_whisper
+from typing import Optional, Dict, Any, Union
 
-logger = logging.getLogger("lectura.audio_processor")
 
-class AudioProcessor:
-    def __init__(self):
-        """Initialize the audio processor with Whisper-large-v3-turbo model"""
-        logger.info("Initializing AudioProcessor with Whisper-large-v3-turbo")
-        self.model_loaded = False
-        
-        try:
-            # Initialize the model using pipeline directly
-            logger.info("Loading Whisper model...")
-            self.pipe = pipeline(
-                "automatic-speech-recognition", 
-                model="distil-whisper/distil-large-v3",
-            )
-            
-            logger.info("Whisper model loaded successfully")
-            self.model_loaded = True
-            
-        except ImportError as e:
-            logger.error(f"Could not import required dependencies: {e}")
-            raise ImportError(f"Failed to import required dependencies: {e}")
-        except Exception as e:
-            logger.error(f"Error initializing Whisper model: {e}", exc_info=True)
-            raise Exception(f"Failed to initialize Whisper model: {e}")
+def transcribe_audio(
+    audio_path: str,
+    path_or_hf_repo: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Transcribe audio using mlx_whisper.
     
-    def transcribe_audio(self, audio_path: str, language: str = "en") -> Dict[str, Any]:
-        """Transcribe audio file using Whisper model
-        
-        Args:
-            audio_path (str): Path to the audio file
-            language (str): Language code (e.g., "en" for English)
-            
-        Returns:
-            Dict: Transcription results
-        """
-        logger.info(f"Transcribing audio file: {audio_path} (language: {language})")
-        
-        audio_path = Path(audio_path)
-        if not audio_path.exists():
-            logger.error(f"Audio file not found: {audio_path}")
-            raise FileNotFoundError(f"Audio file not found: {audio_path}")
-        
-        try:
-            # Set language if provided
-            pipe_kwargs = {"return_timestamps": True, "task": "transcribe", "language": "en"}
-            
-            # Transcribe audio
-            result = self.pipe(str(audio_path), **pipe_kwargs)
-            
-            # Format result to match the expected structure
-            transcript = {
-                "text": result["text"],
-                "language": language,
-                "segments": []
-            }
-            
-            # If chunks are available, add them as segments
-            if "chunks" in result:
-                for i, chunk in enumerate(result["chunks"]):
-                    segment = {
-                        "id": i,
-                        "start": chunk.get("timestamp", [0, 0])[0],
-                        "end": chunk.get("timestamp", [0, 0])[1],
-                        "text": chunk.get("text", "")
-                    }
-                    transcript["segments"].append(segment)
-            
-            logger.info(f"Transcription completed: {len(transcript['text'])} characters")
-            return transcript
-            
-        except Exception as e:
-            logger.error(f"Error during audio transcription: {e}", exc_info=True)
-            raise Exception(f"Audio transcription failed: {e}")
-
-if __name__ == "__main__":
-    # Configure logging for standalone testing
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    Args:
+        audio_path: Path to the audio file to transcribe
+        path_or_hf_repo: Optional path or Hugging Face repo for the model
+                         If None, uses the default model
     
-    # Test with a sample audio file if available
-    import sys
-    if len(sys.argv) > 1:
-        audio_file = sys.argv[1]
-        processor = AudioProcessor()
-        result = processor.transcribe_audio(audio_file)
-        print(result["text"]) 
+    Returns:
+        Dictionary containing transcription results with keys like 'text', 'segments', etc.
+    
+    Note:
+        In future improvements, we could:
+        - Support different model options/sizes
+        - Add language selection
+        - Implement batch processing for multiple files
+        - Add options for timestamp generation
+    """
+    # If path_or_hf_repo is provided, pass it to the transcribe function
+    # Otherwise, use the default model
+    if path_or_hf_repo:
+        result = mlx_whisper.transcribe(
+            audio_path,
+            path_or_hf_repo=path_or_hf_repo,
+        )
+    else:
+        result = mlx_whisper.transcribe(audio_path)
+    
+    return result
+
+
+def get_transcription_text(
+    audio_path: str,
+    path_or_hf_repo: Optional[str] = None,
+) -> str:
+    """
+    Get just the text from an audio transcription.
+    
+    Args:
+        audio_path: Path to the audio file to transcribe
+        path_or_hf_repo: Optional path or Hugging Face repo for the model
+    
+    Returns:
+        The transcribed text as a string
+    """
+    result = transcribe_audio(audio_path, path_or_hf_repo)
+    return result["text"] 
