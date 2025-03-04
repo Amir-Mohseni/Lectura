@@ -491,24 +491,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
         
-        // Update progress steps
+        // First, remove all active and completed classes
         document.querySelectorAll('.processing-steps .step').forEach(step => {
             step.classList.remove('active');
             step.classList.remove('completed');
         });
         
-        const stages = ['upload', 'transcribe', 'generate', 'complete'];
-        const currentIndex = stages.indexOf(stage.replace('ing', ''));
+        // Map the current stage to the corresponding step ID
+        const stageToStepId = {
+            'uploading': 'step-upload',
+            'transcribing': 'step-transcribe',
+            'generating': 'step-generate',
+            'completed': 'step-complete'
+        };
         
-        for (let i = 0; i < stages.length; i++) {
-            const step = document.getElementById(`step-${stages[i]}`);
-            
-            if (i < currentIndex) {
+        // Get the current step element
+        const currentStepId = stageToStepId[stage];
+        const currentStep = document.getElementById(currentStepId);
+        
+        if (!currentStep) {
+            console.error(`Step element not found for stage: ${stage}`);
+            return;
+        }
+        
+        // Add active class to the current step
+        currentStep.classList.add('active');
+        
+        // Mark previous steps as completed
+        const steps = ['step-upload', 'step-transcribe', 'step-generate', 'step-complete'];
+        const currentIndex = steps.indexOf(currentStepId);
+        
+        for (let i = 0; i < currentIndex; i++) {
+            const step = document.getElementById(steps[i]);
+            if (step) {
                 step.classList.add('completed');
-            } else if (i === currentIndex) {
-                step.classList.add('active');
             }
         }
+        
+        // Log the current state for debugging
+        console.log(`Processing state updated: ${stage}, step: ${currentStepId}`);
     }
 
     // Simulate progress for demo purposes

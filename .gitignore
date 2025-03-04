@@ -8,6 +8,11 @@
 uploads/
 output/
 
+# Sample
+sample.ipynb
+
+TODO.txt
+
 # Python
 __pycache__/
 *.py[cod]

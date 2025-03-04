@@ -50,9 +50,9 @@ def generate_notes(
             model or api_model_name or "gemini-2.0-flash"
         )
     elif api_provider == "openai":
-        return generate_with_openai(transcription, title, model or "gpt-4", api_key)
+        return generate_with_openai(transcription, title, model or "gpt-4o", api_key)
     elif api_provider == "anthropic":
-        return generate_with_anthropic(transcription, title, model or "claude-3-sonnet", api_key)
+        return generate_with_anthropic(transcription, title, model or "claude-3.7-sonnet", api_key)
     elif api_provider == "local":
         return generate_with_local(transcription, title, model or "mixtral-8x7b")
     elif api_provider == "ollama":
@@ -98,7 +98,7 @@ Guidelines:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            "temperature": 0.3
+            "temperature": 0.5
         }
         
         response = requests.post(
