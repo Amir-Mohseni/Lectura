@@ -172,47 +172,38 @@ router.post('/generate-notes', async (req, res) => {
             model,
             apiKey,
             apiEndpoint,
-            apiModelName,
-            whisperModel
+            apiModelName
         } = req.body;
-        
+
+        // Check for required fields
         if (!transcription) {
             return res.status(400).json({
                 success: false,
                 message: 'Transcription is required'
             });
         }
-        
+
+        console.log(`Generating notes for "${title || 'Untitled'}" using provider: ${apiProvider || 'default'}`);
+
         // Generate notes from the transcription
-        const options = {
+        const notes = await notesGenerationService.generateNotes(transcription, {
             title: title || 'Lecture Notes',
-            apiProvider: apiProvider || 'default'
-        };
-        
-        // Add appropriate parameters based on the apiProvider
-        if (apiProvider === 'custom') {
-            options.apiEndpoint = apiEndpoint;
-            options.apiModelName = apiModelName;
-            options.apiKey = apiKey;
-        } else if (apiProvider === 'default') {
-            // Use environment variables (handled in service)
-        } else {
-            options.model = model;
-            options.apiKey = apiKey || process.env.OPENAI_API_KEY;
-        }
-        
-        const notes = await notesGenerationService.generateNotes(transcription, options);
-        
+            apiProvider,
+            model,
+            apiKey,
+            apiEndpoint,
+            apiModelName
+        });
+
         res.json({
             success: true,
             notes
         });
     } catch (error) {
-        console.error('Notes generation error:', error);
+        console.error('Error generating notes:', error);
         res.status(500).json({
             success: false,
-            message: 'Notes generation failed',
-            error: error.message
+            message: `Error generating notes: ${error.message}`
         });
     }
 });
