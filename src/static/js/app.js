@@ -1094,7 +1094,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle copy notes
     function handleCopyNotes() {
-        navigator.clipboard.writeText(state.generatedNotes)
+        // Get the current note content
+        const markdownContent = state.currentNote.content;
+        
+        if (!markdownContent) {
+            alert('No content to copy!');
+            return;
+        }
+        
+        navigator.clipboard.writeText(markdownContent)
             .then(() => {
                 // Show temporary success message
                 copyBtn.innerHTML = '<i class="fas fa-check"></i>';
@@ -1104,15 +1112,35 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(err => {
                 console.error('Failed to copy notes:', err);
+                alert('Failed to copy to clipboard. Please try again.');
             });
     }
 
     // Handle download notes
     function handleDownloadNotes() {
-        if (!state.generatedNotes) return;
+        // Get the current note content
+        const markdownContent = state.currentNote.content;
         
-        const fileName = state.audioFile.name.replace(/\.[^/.]+$/, '') + '_notes.md';
-        const blob = new Blob([state.generatedNotes], { type: 'text/markdown' });
+        if (!markdownContent) {
+            alert('No content to download!');
+            return;
+        }
+        
+        // Generate file name from note title or audio file name
+        let fileName = 'lecture_notes.md';
+        
+        if (state.currentNote.title && state.currentNote.title !== 'Generated Notes') {
+            // Use the note title
+            fileName = state.currentNote.title.replace(/[^\w\s-]/g, '') // Remove special chars
+                .trim().replace(/\s+/g, '_') // Replace spaces with underscores
+                + '.md';
+        } else if (state.currentNote.audioFile) {
+            // Use the audio file name
+            fileName = state.currentNote.audioFile.replace(/\.[^/.]+$/, '') + '_notes.md';
+        }
+        
+        // Create and download the file
+        const blob = new Blob([markdownContent], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         
         const a = document.createElement('a');
@@ -1124,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }, 0);
+        }, 100);
     }
 
     // Apply theme based on setting
