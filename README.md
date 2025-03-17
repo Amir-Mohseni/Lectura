@@ -21,8 +21,9 @@ Lectura is a streamlined tool that automatically generates comprehensive, well-s
 ## Requirements
 
 - Node.js 14+
-- Python 3.8+
+- Python 3.10+ (required for MLX)
 - MLX Whisper (for audio transcription)
+- ffmpeg (required for audio processing)
 
 ## Installation
 
@@ -32,23 +33,51 @@ Lectura is a streamlined tool that automatically generates comprehensive, well-s
    cd lectura
    ```
 
-2. Install dependencies:
+2. Install system dependencies:
    ```bash
-   npm run setup
+   # macOS
+   brew install ffmpeg python@3.10
+   
+   # Ubuntu/Debian
+   sudo apt update && sudo apt install -y ffmpeg python3.10 python3.10-venv
+   
+   # Windows (using Chocolatey)
+   choco install ffmpeg python310
    ```
-   This will install both Node.js and Python dependencies.
 
-3. Copy the example environment file and update it with your settings:
+3. Create and activate a Python virtual environment:
+   ```bash
+   python3.10 -m venv .venv
+   
+   # On macOS/Linux
+   source .venv/bin/activate
+   
+   # On Windows
+   .venv\Scripts\activate
+   ```
+
+4. Install dependencies:
+   ```bash
+   # Install both Node.js and Python dependencies
+   npm run setup
+   
+   # Or manually
+   npm install
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+5. Copy the example environment file and update it with your settings:
    ```bash
    cp .env.example .env
    ```
 
-4. Start the server:
+6. Start the server:
    ```bash
    npm start
    ```
 
-5. Access the application at http://localhost:8000
+7. Access the application at http://localhost:8000
 
 ## Usage
 
@@ -78,11 +107,8 @@ You can configure the application using environment variables in the `.env` file
 Lectura supports multiple AI providers for note generation:
 
 1. **Default (Gemini)**: Uses Google's Gemini API with values from `.env`
-2. **OpenAI**: Uses models like GPT-4 or GPT-3.5-turbo
-3. **Anthropic**: Uses Claude models
-4. **Local**: For local LLM servers
-5. **Ollama**: For Ollama-based models
-6. **Custom**: Configure your own API endpoint, model, and key
+2. **Local**: For local LLM servers
+3. **Custom**: Configure your own API endpoint, model, and key
 
 ## Project Structure
 
@@ -106,6 +132,26 @@ lectura/
 ├── package.json          # Node.js dependencies
 └── requirements.txt      # Python dependencies
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **ffmpeg not found**: Make sure ffmpeg is installed and available in your PATH.
+   ```bash
+   # Check if ffmpeg is installed
+   ffmpeg -version
+   ```
+
+2. **MLX Whisper installation failing**: Ensure you're using Python 3.10+ and have created a proper virtual environment.
+
+3. **Python version issues**: MLX requires Python 3.10+.
+   ```bash
+   # Check your Python version
+   python --version
+   ```
+
+4. **API key issues**: Ensure you've added your API keys to the .env file.
 
 ## Processing Flow
 

@@ -7,7 +7,7 @@ def transcribe_audio(
     path_or_hf_repo: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Transcribe audio using mlx_whisper.
+    Transcribe audio using mlx-whisper.
     
     Args:
         audio_path: Path to the audio file to transcribe
