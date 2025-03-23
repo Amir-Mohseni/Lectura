@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 
 def generate_notes(
     transcription: str, 
-    title: str = "Lecture",
+    title: str = "Lecture Notes",
     api_provider: str = "default",
     model: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -55,8 +55,6 @@ def generate_notes(
         return generate_with_anthropic(transcription, title, model or "claude-3.7-sonnet", api_key)
     elif api_provider == "local":
         return generate_with_local(transcription, title, model or "mixtral-8x7b")
-    elif api_provider == "ollama":
-        return generate_with_ollama(transcription, title, model or "llama3")
     else:
         return mock_notes(transcription, title)
 
@@ -74,17 +72,19 @@ def generate_with_custom_api(
 from lecture transcriptions. For this transcription, create well-structured notes in Markdown format.
 
 Guidelines:
-- Begin with a clear title and introduction
+- Do not include any IDs, timestamps, or file information in the title
 - Use appropriate headings (##, ###) to organize the content
 - Create bullet points for key ideas
-- Include numbered lists for sequential information
+- Try to include all the information from the lecture in the notes and if some information is not present, do your best to fill it in using the context of the lecture
+- If something is mispelled or not clear, do your best to fix it
 - Highlight important terms, concepts, or definitions
 - Use emojis where appropriate to enhance readability and engagement (e.g., 📝, 💡, ⚠️, 🔑, etc.)
+- Ensure good spacing between sections with blank lines between headings and content
 - Create a brief summary at the end
-- Keep the notes concise but comprehensive"""
+- Keep the notes comprehensive"""
         
         # Create the user prompt with the transcription
-        user_prompt = f"Here is a transcription of a lecture titled '{title}'. Please transform it into well-organized notes:\n\n{transcription}"
+        user_prompt = f"Here is a transcription of a lecture. Please transform it into well-organized notes with a title based on the content of the lecture. Make the title concise and to the point. Here is the transcription: \n\n{transcription}"
         
         # Make the API request
         headers = {
@@ -101,28 +101,38 @@ Guidelines:
             "temperature": 0.5
         }
         
+        # Fix endpoint URLs
+        endpoint = api_endpoint.rstrip('/')
+        if not endpoint.endswith('/chat/completions'):
+            endpoint = f"{endpoint}/chat/completions"
+            
         response = requests.post(
-            f"{api_endpoint.rstrip('/')}/chat/completions",
+            endpoint,
             headers=headers,
-            json=payload
+            json=payload,
+            timeout=120  # Extended timeout for large transcripts
         )
         
         # Parse response
         if response.status_code != 200:
-            print(f"API error: {response.status_code}")
-            print(response.text)
+            print(f"API error {response.status_code}: {response.text}", file=sys.stderr)
             return mock_notes(transcription, title)
         
         data = response.json()
         notes = data.get("choices", [{}])[0].get("message", {}).get("content", "")
         
         if not notes:
+            print("API returned empty content", file=sys.stderr)
             return mock_notes(transcription, title)
         
+        # Ensure notes start with correct title if not already present
+        if not notes.startswith(f"# {title}"):
+            notes = f"# {title}\n\n{notes}"
+            
         return notes
     
     except Exception as e:
-        print(f"Error generating notes with custom API: {str(e)}")
+        print(f"Error generating notes with custom API: {str(e)}", file=sys.stderr)
         return mock_notes(transcription, title)
 
 def generate_with_openai(
@@ -135,40 +145,50 @@ def generate_with_openai(
     try:
         import openai
         
-        # Configure the client
-        client = openai.OpenAI(api_key=api_key)
+        # Set the API key
+        openai_client = openai.OpenAI(api_key=api_key)
         
         # Create the system prompt
         system_prompt = """You are a professional note-taker specialized in creating organized, concise, and comprehensive notes 
 from lecture transcriptions. For this transcription, create well-structured notes in Markdown format.
 
 Guidelines:
-- Begin with a clear title and introduction
+- Begin with a title using exactly this format: '# {TITLE}' where {TITLE} is the title I provide - DO NOT modify the title
+- Do not include any IDs, timestamps, or file information in the title
 - Use appropriate headings (##, ###) to organize the content
 - Create bullet points for key ideas
 - Include numbered lists for sequential information
 - Highlight important terms, concepts, or definitions
-- Use emojis where appropriate to enhance readability (e.g., 📝, 💡, ⚠️, 🔑, etc.)
+- Use emojis where appropriate to enhance readability and engagement (e.g., 📝, 💡, ⚠️, 🔑, etc.)
+- Ensure good spacing between sections with blank lines between headings and content
 - Create a brief summary at the end
 - Keep the notes concise but comprehensive"""
         
         # Create the user prompt with the transcription
-        user_prompt = f"Here is a transcription of a lecture titled '{title}'. Please transform it into well-organized notes:\n\n{transcription}"
+        user_prompt = f"Here is a transcription of a lecture titled '{title}'. Please transform it into well-organized notes starting with exactly '# {title}'\n\n{transcription}"
         
         # Make the API request
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.3
+            temperature=0.5
         )
         
-        return response.choices[0].message.content
-    
+        # Extract the content from the response
+        notes = response.choices[0].message.content.strip()
+        
+        # Ensure notes start with correct title if not already present
+        if not notes.startswith(f"# {title}"):
+            notes = f"# {title}\n\n{notes}"
+            
+        return notes
+        
     except Exception as e:
-        print(f"Error generating notes with OpenAI API: {str(e)}")
+        print(f"Error using OpenAI API: {str(e)}", file=sys.stderr)
+        # Fallback to mock notes
         return mock_notes(transcription, title)
 
 def generate_with_anthropic(
@@ -181,40 +201,55 @@ def generate_with_anthropic(
     try:
         import anthropic
         
-        # Configure the client
+        # Create the Anthropic client
         client = anthropic.Anthropic(api_key=api_key)
         
         # Create the system prompt
         system_prompt = """You are a professional note-taker specialized in creating organized, concise, and comprehensive notes 
-from lecture transcriptions. For this transcription, create well-structured notes in Markdown format.
+from lecture transcriptions. For this transcription, create well-structured notes in Markdown format."""
+        
+        # Create the user prompt with the transcription
+        user_prompt = f"""Here is a transcription of a lecture titled '{title}'. Please transform it into well-organized notes.
 
 Guidelines:
-- Begin with a clear title and introduction
+- Begin with a title using exactly this format: '# {title}' - DO NOT modify the title
+- Do not include any IDs, timestamps, or file information in the title
 - Use appropriate headings (##, ###) to organize the content
 - Create bullet points for key ideas
 - Include numbered lists for sequential information
 - Highlight important terms, concepts, or definitions
-- Use emojis where appropriate to enhance readability (e.g., 📝, 💡, ⚠️, 🔑, etc.)
+- Use emojis where appropriate to enhance readability and engagement (e.g., 📝, 💡, ⚠️, 🔑, etc.)
+- Ensure good spacing between sections with blank lines between headings and content
 - Create a brief summary at the end
-- Keep the notes concise but comprehensive"""
-        
-        # Create the user prompt with the transcription
-        user_prompt = f"Here is a transcription of a lecture titled '{title}'. Please transform it into well-organized notes:\n\n{transcription}"
+- Keep the notes concise but comprehensive
+
+Here's the transcription:
+
+{transcription}"""
         
         # Make the API request
         response = client.messages.create(
             model=model,
             system=system_prompt,
             max_tokens=4000,
+            temperature=0.5,
             messages=[
                 {"role": "user", "content": user_prompt}
             ]
         )
         
-        return response.content[0].text
-    
+        # Extract the content from the response
+        notes = response.content[0].text.strip()
+        
+        # Ensure notes start with correct title if not already present
+        if not notes.startswith(f"# {title}"):
+            notes = f"# {title}\n\n{notes}"
+            
+        return notes
+        
     except Exception as e:
-        print(f"Error generating notes with Anthropic API: {str(e)}")
+        print(f"Error using Anthropic API: {str(e)}", file=sys.stderr)
+        # Fallback to mock notes
         return mock_notes(transcription, title)
 
 def generate_with_local(
@@ -222,8 +257,8 @@ def generate_with_local(
     title: str,
     model: str
 ) -> str:
-    """Generate notes using a local LLM server"""
-    # This is a placeholder - implement according to your local setup
+    """Generate notes using local LLM API (placeholder)"""
+    print(f"Local LLM API not implemented yet. Using mock notes with title '{title}'", file=sys.stderr)
     return mock_notes(transcription, title)
 
 def generate_with_ollama(
@@ -231,31 +266,55 @@ def generate_with_ollama(
     title: str,
     model: str
 ) -> str:
-    """Generate notes using Ollama"""
+    """Generate notes using Ollama API"""
     try:
-        # Make a request to the Ollama server
+        import requests
+        
+        # Create the prompt
+        prompt = f"""You are creating organized and comprehensive notes from a lecture transcription.
+
+Create well-structured notes in Markdown format according to these guidelines:
+- Begin with a title using exactly this format: '# {title}' - DO NOT modify the title
+- Do not include any IDs, timestamps, or file information in the title
+- Use appropriate headings (##, ###) to organize the content
+- Create bullet points for key ideas
+- Include numbered lists for sequential information
+- Highlight important terms, concepts, or definitions
+- Use emojis where appropriate for readability
+- Ensure good spacing between sections with blank lines
+- Create a brief summary at the end
+
+Here's the transcription:
+
+{transcription}"""
+        
+        # Make the API request
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
                 "model": model,
-                "prompt": f"""You are a professional note-taker. Create organized, concise, and comprehensive notes in Markdown format for this lecture transcription titled '{title}'. 
-
-Use appropriate headings, bullet points, and numbered lists. Highlight important terms and use emojis where appropriate to enhance readability (e.g., 📝, 💡, ⚠️, 🔑, etc.).
-
-Transcription:
-{transcription}""",
+                "prompt": prompt,
                 "stream": False
-            }
+            },
+            timeout=120  # Extended timeout for large transcripts
         )
         
+        # Check if the request was successful
         if response.status_code == 200:
-            data = response.json()
-            return data.get("response", "")
+            notes = response.json().get("response", "").strip()
+            
+            # Ensure notes start with correct title if not already present
+            if not notes.startswith(f"# {title}"):
+                notes = f"# {title}\n\n{notes}"
+                
+            return notes
         else:
+            print(f"Error using Ollama API: {response.text}", file=sys.stderr)
             return mock_notes(transcription, title)
-    
+            
     except Exception as e:
-        print(f"Error generating notes with Ollama: {str(e)}")
+        print(f"Error using Ollama API: {str(e)}", file=sys.stderr)
+        # Fallback to mock notes
         return mock_notes(transcription, title)
 
 def mock_notes(transcription: str, title: str) -> str:
@@ -265,27 +324,34 @@ def mock_notes(transcription: str, title: str) -> str:
     summary = '. '.join(sentences) + '.'
     
     # Create a basic structure with the title and summary
-    return f"""# 📝 Notes: {title}
+    return f"""# {title}
 
-## 📋 Summary
+## Introduction
 {summary}
 
-## 🔑 Key Points
-- First key point extracted from the lecture
-- Second key point extracted from the lecture
-- Third key point extracted from the lecture
+## Key Points
+- First important concept from the lecture
+- Second key point discussed
+- Third significant idea presented
 
-## 📚 Details
-The details of the lecture would be organized here based on the content.
+## Details
 
-### 🔍 Subtopic 1
-Information about the first subtopic would be here.
+### Topic 1
+- Detail about the first topic
+- Supporting information
+- Examples mentioned
 
-### 🔍 Subtopic 2
-Information about the second subtopic would be here.
+### Topic 2
+- Analysis of the second topic
+- Related concepts
+- Practical applications
 
-## 💡 Conclusion
-A brief conclusion based on the lecture content.
+## Summary
+
+This lecture covered several important concepts related to {title}. The main takeaways include understanding the core principles, their applications, and how they relate to the broader field.
+
+---
+*Notes generated by Lectura*
 """
 
 if __name__ == "__main__":

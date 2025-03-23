@@ -472,58 +472,146 @@ main {
 
 /* Notes preview in view mode */
 .markdown-preview {
-    padding: 25px;
+    padding: 20px;
     overflow-y: auto;
     height: 100%;
-    flex: 1;
-    background-color: var(--surface-color);
+    font-size: 16px;
 }
 
+/* Improved markdown styling for better readability */
 .markdown-preview h1,
 .markdown-preview h2,
 .markdown-preview h3,
-.markdown-preview h4,
-.markdown-preview h5,
-.markdown-preview h6 {
-    margin-top: 1.5rem;
-    margin-bottom: 1rem;
+.markdown-preview h4 {
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    line-height: 1.4;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.markdown-preview h1 {
+    font-size: 2em;
+    margin-top: 0.5em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+.markdown-preview h2 {
+    font-size: 1.6em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+.markdown-preview h3 {
+    font-size: 1.3em;
+}
+
+.markdown-preview h4 {
+    font-size: 1.1em;
 }
 
 .markdown-preview p {
-    margin-bottom: 1rem;
+    margin-bottom: 1.2em;
+    line-height: 1.6;
 }
 
 .markdown-preview ul,
 .markdown-preview ol {
-    margin-bottom: 1rem;
-    padding-left: 1.5rem;
+    margin-bottom: 1.5em;
+    padding-left: 2em;
 }
 
 .markdown-preview li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.5em;
 }
 
 .markdown-preview code {
-    background-color: var(--border-color);
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    font-size: 0.9rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9em;
+}
+
+.dark-mode .markdown-preview code {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .markdown-preview pre {
-    background-color: var(--border-color);
-    padding: 1rem;
-    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 1em;
+    border-radius: 5px;
     overflow-x: auto;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5em;
+}
+
+.dark-mode .markdown-preview pre {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .markdown-preview blockquote {
     border-left: 4px solid var(--primary-color);
-    padding-left: 1rem;
+    padding-left: 1em;
     margin-left: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5em;
     color: var(--text-secondary);
+}
+
+/* Section spacing for better readability */
+.section-spacing {
+    height: 15px;
+}
+
+/* Fix list styling */
+.markdown-preview ul {
+    list-style-type: disc;
+    margin-left: 1em;
+    margin-top: 0.5em;
+}
+
+.markdown-preview ol {
+    list-style-type: decimal;
+    margin-left: 1em;
+    margin-top: 0.5em;
+}
+
+/* Fix spacing between list items */
+.markdown-preview li + li {
+    margin-top: 0.5em;
+}
+
+/* Better table styling */
+.markdown-preview table {
+    border-collapse: collapse;
+    margin: 1em 0;
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+.markdown-preview th, 
+.markdown-preview td {
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.markdown-preview th {
+    background-color: rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+}
+
+.dark-mode .markdown-preview th {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.markdown-preview tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dark-mode .markdown-preview tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
 }
 
 /* Modal Styles */
@@ -1156,4 +1244,76 @@ main {
     top: 50%;
     transform: translateY(-50%);
     opacity: 0.5;
+}
+
+/* Status indicators */
+.status {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.status.error {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.status.success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.status.warning {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+/* Retry container and button */
+.retry-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.retry-message {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: inherit;
+}
+
+.retry-btn {
+    padding: 8px 16px;
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.retry-btn:hover {
+    background-color: var(--hover-color);
+}
+
+/* Processing status */
+.processing-status {
+    margin: 1rem 0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+}
+
+.processing-status.error {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+.processing-status.warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: var(--warning-color);
+    color: var(--warning-color);
 } 

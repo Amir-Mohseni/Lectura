@@ -11,6 +11,7 @@ const fs = require('fs');
 const transcriptionService = require('../services/transcriptionService');
 const notesGenerationService = require('../services/notesGenerationService');
 const processingService = require('../services/processingService');
+const fileStorageService = require('../services/fileStorageService');
 
 // Set up storage for uploaded files
 const storage = multer.diskStorage({
@@ -143,10 +144,19 @@ router.post('/transcribe', async (req, res) => {
         // Transcribe the audio
         const transcription = await transcriptionService.transcribeAudio(audioPath, whisperModel || 'default');
         
+        // Store the transcription
+        const title = path.basename(audioPath, path.extname(audioPath));
+        const storageResult = await fileStorageService.saveTranscription(
+            audioPath,
+            transcription.text,
+            title
+        );
+        
         res.json({
             success: true,
             audioPath,
-            transcription
+            transcription,
+            audioId: storageResult.audioId
         });
     } catch (error) {
         console.error('Transcription error:', error);
@@ -172,8 +182,28 @@ router.post('/generate-notes', async (req, res) => {
             model,
             apiKey,
             apiEndpoint,
-            apiModelName
+            apiModelName,
+            audioId,
+            audioPath
         } = req.body;
+
+        // If audioId is provided, use it to regenerate notes
+        if (audioId) {
+            console.log(`Regenerating notes for audio ID: ${audioId}`);
+            const result = await processingService.regenerateNotes(audioId, {
+                apiProvider,
+                model,
+                apiKey,
+                apiEndpoint,
+                apiModelName
+            });
+            
+            return res.json({
+                success: true,
+                notes: result.notes,
+                audioId
+            });
+        }
 
         // Check for required fields
         if (!transcription) {
@@ -185,6 +215,17 @@ router.post('/generate-notes', async (req, res) => {
 
         console.log(`Generating notes for "${title || 'Untitled'}" using provider: ${apiProvider || 'default'}`);
 
+        // If we have an audioPath but no audioId, save the transcription
+        let savedAudioId = audioId;
+        if (audioPath && !audioId) {
+            const storageResult = await fileStorageService.saveTranscription(
+                audioPath,
+                transcription,
+                title
+            );
+            savedAudioId = storageResult.audioId;
+        }
+
         // Generate notes from the transcription
         const notes = await notesGenerationService.generateNotes(transcription, {
             title: title || 'Lecture Notes',
@@ -195,9 +236,15 @@ router.post('/generate-notes', async (req, res) => {
             apiModelName
         });
 
+        // Save the notes if we have an audioId
+        if (savedAudioId) {
+            await fileStorageService.saveNotes(savedAudioId, notes);
+        }
+
         res.json({
             success: true,
-            notes
+            notes,
+            audioId: savedAudioId
         });
     } catch (error) {
         console.error('Error generating notes:', error);
@@ -209,8 +256,66 @@ router.post('/generate-notes', async (req, res) => {
 });
 
 /**
+ * @route POST /api/regenerate-notes
+ * @description Regenerate notes for an existing audio file
+ * @access Public
+ */
+router.post('/regenerate-notes', async (req, res) => {
+    try {
+        const { audioId, apiProvider, model, apiKey, apiEndpoint, apiModelName } = req.body;
+        
+        if (!audioId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Audio ID is required'
+            });
+        }
+        
+        // Get processing options
+        const options = {
+            apiProvider: apiProvider || 'default',
+            model: model || process.env.API_MODEL,
+            apiKey: apiKey || process.env.API_KEY
+        };
+        
+        // Add custom API settings if provided
+        if (apiProvider === 'custom') {
+            options.apiEndpoint = apiEndpoint;
+            options.apiModelName = apiModelName;
+        }
+        
+        // Regenerate notes
+        try {
+            const result = await processingService.regenerateNotes(audioId, options);
+            
+            // Return the results
+            res.json({
+                success: true,
+                transcription: result.transcription,
+                notes: result.notes,
+                audioId: result.audioId
+            });
+        } catch (processingError) {
+            console.error('Regeneration error:', processingError);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to regenerate notes',
+                error: processingError.message
+            });
+        }
+    } catch (error) {
+        console.error('API error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+});
+
+/**
  * @route POST /api/process
- * @description Process audio file: upload, transcribe, and generate notes
+ * @description Process an audio file, transcribe it and generate notes
  * @access Public
  */
 router.post('/process', upload.fields([
@@ -218,93 +323,90 @@ router.post('/process', upload.fields([
     { name: 'slides', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        console.log('Received processing request');
-        
-        const {
-            apiProvider,
-            model,
-            apiKey,
-            apiEndpoint,
-            apiModelName,
-            whisperModel
-        } = req.body;
-
         // Check if audio file was uploaded
-        if (!req.files || !req.files.audio || !req.files.audio[0]) {
+        if (!req.files || !req.files.audio) {
             return res.status(400).json({
                 success: false,
-                message: 'Audio file is required'
+                message: 'No audio file uploaded'
             });
         }
-
+        
         const audioFile = req.files.audio[0];
         const slidesFile = req.files.slides ? req.files.slides[0] : null;
-
-        console.log(`Processing audio file: ${audioFile.path}`);
-        console.log(`Using whisper model: ${whisperModel || 'default'}`);
         
-        // Process the audio file (and slides if available)
-        let result;
+        // Get processing options
+        const options = {
+            apiProvider: req.body.apiProvider || 'default',
+            model: req.body.model || process.env.API_MODEL,
+            apiKey: req.body.apiKey || process.env.API_KEY,
+            whisperModel: req.body.whisperModel || 'default'
+        };
         
+        // Add custom API settings if provided
+        if (req.body.apiProvider === 'custom') {
+            options.apiEndpoint = req.body.apiEndpoint;
+            options.apiModelName = req.body.apiModelName;
+        }
+        
+        // Process the audio file
         try {
-            if (slidesFile) {
-                // For future implementation
-                console.log(`Processing with slides: ${slidesFile.path}`);
-                result = await processingService.processAudioAndPdf(
-                    audioFile.path,
-                    slidesFile.path,
-                    {
-                        apiProvider,
-                        model,
-                        apiKey,
-                        apiEndpoint,
-                        apiModelName,
-                        whisperModel
-                    }
-                );
-            } else {
-                result = await processingService.processAudio(
-                    audioFile.path,
-                    {
-                        apiProvider,
-                        model,
-                        apiKey,
-                        apiEndpoint,
-                        apiModelName,
-                        whisperModel
-                    }
-                );
-            }
+            const result = await processingService.processAudio(audioFile.path, options);
             
-            console.log('Processing completed successfully');
-            
+            // Return the results
             res.json({
                 success: true,
                 transcription: result.transcription,
-                notes: result.notes
+                notes: result.notes,
+                audioId: result.audioId
             });
         } catch (processingError) {
-            console.error('Error during processing:', processingError);
+            console.error('Processing error:', processingError);
             
-            // Try to clean up the uploaded files
-            try {
-                if (audioFile && audioFile.path) {
-                    fs.unlinkSync(audioFile.path);
-                }
-                if (slidesFile && slidesFile.path) {
-                    fs.unlinkSync(slidesFile.path);
-                }
-            } catch (cleanupError) {
-                console.warn('Error cleaning up files:', cleanupError);
+            // Check if it's a transcription error with NaN
+            if (processingError.message.includes('NaN') && processingError.message.includes('JSON')) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Transcription failed with JSON parsing error. Please try again, as this is often a temporary issue with the ML model output.',
+                    error: processingError.message,
+                    retryable: true
+                });
             }
             
-            throw processingError;
+            // Otherwise, return a generic error
+            res.status(500).json({
+                success: false,
+                message: 'Processing failed',
+                error: processingError.message
+            });
         }
     } catch (error) {
-        console.error('Error processing files:', error);
+        console.error('API error:', error);
         res.status(500).json({
             success: false,
-            message: `Error processing files: ${error.message}`
+            message: 'Server error',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @route GET /api/processed-audios
+ * @description Get a list of all processed audio files
+ * @access Public
+ */
+router.get('/processed-audios', async (req, res) => {
+    try {
+        const processedAudios = await fileStorageService.listProcessedAudios();
+        
+        res.json({
+            success: true,
+            audios: processedAudios
+        });
+    } catch (error) {
+        console.error('Error listing processed audios:', error);
+        res.status(500).json({
+            success: false,
+            message: `Error listing processed audios: ${error.message}`
         });
     }
 });

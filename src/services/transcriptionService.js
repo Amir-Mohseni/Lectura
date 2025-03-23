@@ -16,9 +16,10 @@ class TranscriptionService {
      * 
      * @param {string} audioFilePath - Path to the audio file
      * @param {string|null} whisperModel - Optional whisper model to use
+     * @param {number} retryCount - Number of retry attempts (default: 3)
      * @returns {Promise<object>} Transcription result
      */
-    async transcribeAudio(audioFilePath, whisperModel = null) {
+    async transcribeAudio(audioFilePath, whisperModel = null, retryCount = 3) {
         try {
             console.log(`Transcribing audio file: ${audioFilePath}`);
             
@@ -60,6 +61,19 @@ try:
         : `result = transcribe_audio(audio_path)
     text = get_transcription_text(audio_path)`}
     
+    # Check for NaN values in the result to avoid JSON parsing issues
+    import re
+    import json as json_lib
+    
+    # Convert result to JSON string
+    result_str = json_lib.dumps(result)
+    
+    # Fix any NaN values (which aren't valid JSON)
+    result_str = re.sub(r':\\s*NaN', ': null', result_str)
+    
+    # Convert back to dict
+    result = json_lib.loads(result_str)
+    
     # Output the results
     output = {"full_result": result, "text": text}
     with open(output_path, "w") as f:
@@ -100,15 +114,27 @@ except Exception as e:
             });
             
             await fsPromises.unlink(tempOutputPath).catch(err => {
-                console.warn(`Warning: Could not delete temporary file ${tempOutputPath}:`, err);
+                console.warn(`Warning: Could not delete temporary output ${tempOutputPath}:`, err);
             });
             
-            return {
-                text: result.text,
-                full_result: result.full_result
-            };
+            return result.full_result;
         } catch (error) {
-            console.error('Error in transcription service:', error);
+            console.error(`Transcription attempt failed: ${error.message}`);
+            
+            // Check for JSON parsing errors with "NaN" or other conditions that warrant a retry
+            const isJsonNaNError = 
+                error.message.includes('Unexpected token') && 
+                (error.message.includes('NaN') || error.message.includes('is not valid JSON'));
+                
+            // If it's a retryable error and we have retries left
+            if ((isJsonNaNError) && retryCount > 0) {
+                console.log(`Retrying transcription, ${retryCount} attempts left...`);
+                // Wait a short delay before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Retry with one less retry count
+                return this.transcribeAudio(audioFilePath, whisperModel, retryCount - 1);
+            }
+            
             throw new Error(`Failed to transcribe audio: ${error.message}`);
         }
     }

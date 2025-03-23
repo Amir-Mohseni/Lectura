@@ -31,3 +31,6 @@ python-dotenv>=1.0.0
 # macOS: brew install ffmpeg
 # Ubuntu/Debian: sudo apt install ffmpeg
 # Windows: choco install ffmpeg
+
+ollama
+# ollama pull olmocr-quen2-vl-7b-instruct-4bit
