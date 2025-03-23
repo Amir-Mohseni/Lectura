@@ -453,11 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Clean up the notes content by removing any auto-generated title
                 let cleanedNotes = data.notes;
-                // Remove any title that matches the pattern "# Lecture Notes: Audio..." or just "# Audio"
-                cleanedNotes = cleanedNotes.replace(
-                    /^# (?:Lecture Notes:|Lecture:|Notes:|Audio)[\s\-]*(?:Audio[\-_]?\d*[\-_]?\d*.*$)?/m,
-                    ''
-                );
                 
                 // Clean up any blank lines at the beginning
                 cleanedNotes = cleanedNotes.replace(/^\s+/, '');
@@ -608,11 +603,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 // Clean up the notes content by removing any auto-generated title
                 let cleanedNotes = data.notes;
-                // Remove any title that matches the pattern "# Lecture Notes: Audio..." or just "# Audio"
-                cleanedNotes = cleanedNotes.replace(
-                    /^# (?:Lecture Notes:|Lecture:|Notes:|Audio)[\s\-]*(?:Audio[\-_]?\d*[\-_]?\d*.*$)?/m,
-                    ''
-                );
                 
                 // Clean up any blank lines at the beginning
                 cleanedNotes = cleanedNotes.replace(/^\s+/, '');
@@ -862,11 +852,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Clean up the notes content by removing any auto-generated title
         let cleanedNotes = data.notes;
-        // Remove any title that matches the pattern "# Lecture Notes: Audio..." or just "# Audio"
-        cleanedNotes = cleanedNotes.replace(
-            /^# (?:Lecture Notes:|Lecture:|Notes:|Audio)[\s\-]*(?:Audio[\-_]?\d*[\-_]?\d*.*$)?/m,
-            ''
-        );
         
         // Clean up any blank lines at the beginning
         cleanedNotes = cleanedNotes.replace(/^\s+/, '');
